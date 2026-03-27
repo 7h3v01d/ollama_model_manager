@@ -3,8 +3,6 @@
 A commercial-grade desktop application for managing local Ollama LLM models. Built with PyQt6, it provides a professional dark UI with eight specialised tabs covering the full local-model lifecycle — from discovery and installation through benchmarking, monitoring, and custom model creation.
 
 ---
-<img width="1256" height="739" alt="Screenshot" src="https://github.com/user-attachments/assets/b3088464-c091-47c3-9edb-20cbc648c716" />
-
 
 ## Features
 
@@ -142,26 +140,8 @@ GPU monitoring is tested on Windows with NVIDIA GPUs. ROCm support (AMD) is impl
 
 ---
 
-### Contribution Policy
+## Licence
 
-Feedback, bug reports, and suggestions are welcome.
+MIT — see `LICENCE` for details.
 
-You may submit:
-
-- Issues
-- Design feedback
-- Pull requests for review
-
-However:
-
-- Contributions do not grant any license or ownership rights
-- The author retains full discretion over acceptance and future use
-- Contributors receive no rights to reuse, redistribute, or derive from this code
-
----
-
-### License
-This project is not open-source.
-
-It is licensed under a private evaluation-only license.
-See LICENSE.txt for full terms.
+Built by Leon under the **KeystoneAI** brand.
