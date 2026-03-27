@@ -4,6 +4,9 @@ A commercial-grade desktop application for managing local Ollama LLM models. Bui
 
 ---
 
+<img width="1920" height="1040" alt="Screenshot" src="https://github.com/user-attachments/assets/e4d3af29-f6ef-4b2f-b90d-733b3ddb3123" />
+
+
 ## Features
 
 ### Installed Models
