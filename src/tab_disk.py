@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from window import MainWindow
 
 import json, os, re, subprocess, sys, time, zipfile, tempfile
+from logger import log
 from datetime import datetime
 from pathlib import Path
 
@@ -99,23 +100,46 @@ class DiskMixin:
 
     def _disk_scan(self):
         models_dir = Path(self.disk_dir_input.text().strip()).expanduser()
+        log.info("_disk_scan: requested  dir=%s", models_dir)
         if not models_dir.exists():
+            log.warning("_disk_scan: directory does not exist: %s", models_dir)
             self._err("Not Found", f"Directory does not exist:\n{models_dir}")
             return
         self.disk_scan_btn.setEnabled(False)
         self.disk_status_lbl.setText("Scanning…")
         self._set_status("Analysing disk usage…")
         installed = [r.name for r in self.installed_model.rows()]
+        log.info("_disk_scan: launching worker  installed_models=%d", len(installed))
         worker = DiskAnalysisWorker(models_dir, installed)
         worker.finished.connect(self._disk_on_result)
-        worker.failed.connect(lambda msg: (
-            self._err("Scan Failed", msg),
-            self.disk_scan_btn.setEnabled(True),
-            self.disk_status_lbl.setText("Scan failed")))
+        worker.failed.connect(self._disk_on_fail)
+        # Keep a strong Python reference so the worker isn't GC'd before
+        # the thread fires started — local variables get collected immediately
+        # after _start_worker() returns on CPython/Windows.
+        self._disk_worker = worker
+        worker.finished.connect(lambda _: setattr(self, "_disk_worker", None))
+        worker.failed.connect(lambda _: setattr(self, "_disk_worker", None))
         self._start_worker(worker)
+
+    def _disk_on_fail(self, msg: str):
+        log.error("_disk_scan: worker failed: %s", msg)
+        self._err("Scan Failed", msg)
+        self.disk_scan_btn.setEnabled(True)
+        self.disk_status_lbl.setText("Scan failed")
 
 
     def _disk_on_result(self, result: dict):
+        log.info(
+            "_disk_on_result: received result  type=%s  keys=%s",
+            type(result).__name__,
+            list(result.keys()) if isinstance(result, dict) else "NOT A DICT"
+        )
+        if not isinstance(result, dict):
+            log.error("_disk_on_result: result is not a dict — got %r", result)
+            self._err("Scan Error", f"Internal error: unexpected result type {type(result).__name__}\n\nCheck ollama_manager.log for details.")
+            self.disk_scan_btn.setEnabled(True)
+            self.disk_status_lbl.setText("Scan failed — see log")
+            return
         self._disk_result = result
         self.disk_scan_btn.setEnabled(True)
         orphans = result["orphan_blobs"]

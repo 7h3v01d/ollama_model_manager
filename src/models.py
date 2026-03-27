@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import (
     QToolBar, QVBoxLayout, QWidget, QAbstractItemView,
 )
 
-from utils import human_bytes, parse_time, iter_unique, blob_filename_from_digest, safe_mkdir, get_system_stats
+from utils import human_bytes, parse_time, iter_unique, blob_filename_from_digest, safe_mkdir, get_system_stats, normalize_model_name
 from client import OllamaClient
 
 #  TABLE MODELS
@@ -416,6 +416,8 @@ def start_worker(worker: Worker) -> QThread:
 
 def analyse_disk(models_dir: Path, installed_models: list) -> dict:
     """Return per-model blob sizes and orphaned blobs."""
+    from logger import log
+    log.info("analyse_disk: START  dir=%s  models=%d", models_dir, len(installed_models))
     blobs_dir = models_dir / "blobs"
     result: dict = {
         "per_model": {},
@@ -426,6 +428,7 @@ def analyse_disk(models_dir: Path, installed_models: list) -> dict:
         "models_dir": str(models_dir),
     }
     if not models_dir.exists():
+        log.warning("analyse_disk: models_dir does not exist: %s", models_dir)
         return result
 
     all_blobs: dict = {}
@@ -467,4 +470,11 @@ def analyse_disk(models_dir: Path, installed_models: list) -> dict:
 
     result["total_size"] = result["blobs_dir_size"] + result["manifests_dir_size"]
     result["orphan_blobs"].sort(key=lambda x: x["size"], reverse=True)
+    from logger import log
+    log.info(
+        "analyse_disk: DONE  models=%d  blobs_sz=%s  orphans=%d",
+        len(result["per_model"]),
+        result["blobs_dir_size"],
+        len(result["orphan_blobs"]),
+    )
     return result

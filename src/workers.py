@@ -15,6 +15,7 @@ from typing import Iterable
 
 import requests
 from PyQt6.QtCore import (
+    pyqtSlot,
     Qt, QAbstractTableModel, QModelIndex, QObject, QThread,
     pyqtSignal, QTimer, QSize)
 from PyQt6.QtGui import (
@@ -59,6 +60,7 @@ class PullWorker(Worker):
     def stop(self):
         self._stop = True
 
+    @pyqtSlot()
     def run(self):
         try:
             last = None
@@ -82,6 +84,7 @@ class ExportImportWorker(Worker):
         self.zip_path = zip_path
         self.model_names = model_names or []
 
+    @pyqtSlot()
     def run(self):
         try:
             if self.mode == "export_full":
@@ -207,6 +210,7 @@ class RegistryFetchWorker(Worker):
         self.client = client
         self.fetch_tags_for = fetch_tags_for
 
+    @pyqtSlot()
     def run(self):
         try:
             if self.fetch_tags_for:
@@ -266,6 +270,7 @@ class BenchmarkWorker(Worker):
     def stop(self):
         self._stop = True
 
+    @pyqtSlot()
     def run(self):
         results = []
         for idx, model, prompt in self.runs:
@@ -329,6 +334,7 @@ class ResourceMonitorWorker(QObject):
         super().__init__()
         self.client = client
 
+    @pyqtSlot()
     def run(self):
         try:
             stats = get_system_stats()
@@ -352,10 +358,16 @@ class DiskAnalysisWorker(Worker):
         self.models_dir = models_dir
         self.installed_models = installed_models
 
+    @pyqtSlot()
     def run(self):
+        from logger import log
+        log.info("DiskAnalysisWorker.run: starting  dir=%s", self.models_dir)
         try:
-            self.finished.emit((self.models_dir, self.installed_models))
+            result = analyse_disk(self.models_dir, self.installed_models)
+            log.info("DiskAnalysisWorker.run: emitting finished signal")
+            self.finished.emit(result)
+            log.info("DiskAnalysisWorker.run: finished signal emitted OK")
         except Exception as e:
+            log.exception("DiskAnalysisWorker.run: EXCEPTION: %s", e)
             self.failed.emit(str(e))
-
 

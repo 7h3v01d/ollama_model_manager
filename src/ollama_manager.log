@@ -1,0 +1,58 @@
+11:58:35  INFO      logger:46  —  ============================================================
+11:58:35  INFO      logger:47  —  Ollama Manager Pro — session started 2026-03-27 11:58:35
+11:58:35  INFO      logger:49  —  Log file: G:\Projects\Ollama Projects\ollama_manager_pro\src\ollama_manager.log
+11:58:57  INFO      tab_disk:103  —  _disk_scan: requested  dir=G:\.ollama\models
+11:58:57  INFO      tab_disk:112  —  _disk_scan: launching worker  installed_models=1
+12:03:25  INFO      logger:46  —  ============================================================
+12:03:25  INFO      logger:47  —  Ollama Manager Pro — session started 2026-03-27 12:03:25
+12:03:25  INFO      logger:49  —  Log file: G:\Projects\Ollama Projects\ollama_manager_pro\src\ollama_manager.log
+12:03:33  INFO      tab_disk:103  —  _disk_scan: requested  dir=C:\Users\leonp\.ollama\models
+12:03:33  INFO      tab_disk:112  —  _disk_scan: launching worker  installed_models=1
+12:20:19  INFO      logger:46  —  ============================================================
+12:20:19  INFO      logger:47  —  Ollama Manager Pro — session started 2026-03-27 12:20:19
+12:20:19  INFO      logger:49  —  Log file: G:\Projects\Ollama Projects\ollama_manager_pro\src\ollama_manager.log
+12:20:34  INFO      tab_disk:103  —  _disk_scan: requested  dir=C:\Users\leonp\.ollama\models
+12:20:34  INFO      tab_disk:112  —  _disk_scan: launching worker  installed_models=1
+12:20:34  INFO      workers:364  —  DiskAnalysisWorker.run: starting  dir=C:\Users\leonp\.ollama\models
+12:20:34  INFO      models:420  —  analyse_disk: START  dir=C:\Users\leonp\.ollama\models  models=1
+12:20:34  ERROR     workers:371  —  DiskAnalysisWorker.run: EXCEPTION: name 'normalize_model_name' is not defined
+Traceback (most recent call last):
+  File "G:\Projects\Ollama Projects\ollama_manager_pro\src\workers.py", line 366, in run
+    result = analyse_disk(self.models_dir, self.installed_models)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\Projects\Ollama Projects\ollama_manager_pro\src\models.py", line 443, in analyse_disk
+    mf = find_manifest_file(models_dir, model_name)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\Projects\Ollama Projects\ollama_manager_pro\src\models.py", line 169, in find_manifest_file
+    repo, tag = normalize_model_name(model_name)
+                ^^^^^^^^^^^^^^^^^^^^
+NameError: name 'normalize_model_name' is not defined
+12:20:34  ERROR     tab_disk:125  —  _disk_scan: worker failed: name 'normalize_model_name' is not defined
+12:20:48  INFO      tab_disk:103  —  _disk_scan: requested  dir=G:\.ollama\models
+12:20:48  INFO      tab_disk:112  —  _disk_scan: launching worker  installed_models=1
+12:20:48  INFO      workers:364  —  DiskAnalysisWorker.run: starting  dir=G:\.ollama\models
+12:20:48  INFO      models:420  —  analyse_disk: START  dir=G:\.ollama\models  models=1
+12:20:48  ERROR     workers:371  —  DiskAnalysisWorker.run: EXCEPTION: name 'normalize_model_name' is not defined
+Traceback (most recent call last):
+  File "G:\Projects\Ollama Projects\ollama_manager_pro\src\workers.py", line 366, in run
+    result = analyse_disk(self.models_dir, self.installed_models)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\Projects\Ollama Projects\ollama_manager_pro\src\models.py", line 443, in analyse_disk
+    mf = find_manifest_file(models_dir, model_name)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\Projects\Ollama Projects\ollama_manager_pro\src\models.py", line 169, in find_manifest_file
+    repo, tag = normalize_model_name(model_name)
+                ^^^^^^^^^^^^^^^^^^^^
+NameError: name 'normalize_model_name' is not defined
+12:20:48  ERROR     tab_disk:125  —  _disk_scan: worker failed: name 'normalize_model_name' is not defined
+12:24:20  INFO      logger:46  —  ============================================================
+12:24:20  INFO      logger:47  —  Ollama Manager Pro — session started 2026-03-27 12:24:20
+12:24:20  INFO      logger:49  —  Log file: G:\Projects\Ollama Projects\ollama_manager_pro\src\ollama_manager.log
+12:24:27  INFO      tab_disk:103  —  _disk_scan: requested  dir=C:\Users\leonp\.ollama\models
+12:24:27  INFO      tab_disk:112  —  _disk_scan: launching worker  installed_models=1
+12:24:27  INFO      workers:364  —  DiskAnalysisWorker.run: starting  dir=C:\Users\leonp\.ollama\models
+12:24:27  INFO      models:420  —  analyse_disk: START  dir=C:\Users\leonp\.ollama\models  models=1
+12:24:27  INFO      models:474  —  analyse_disk: DONE  models=0  blobs_sz=3338801804  orphans=5
+12:24:27  INFO      workers:367  —  DiskAnalysisWorker.run: emitting finished signal
+12:24:27  INFO      workers:369  —  DiskAnalysisWorker.run: finished signal emitted OK
+12:24:27  INFO      tab_disk:132  —  _disk_on_result: received result  type=dict  keys=['per_model', 'orphan_blobs', 'total_size', 'blobs_dir_size', 'manifests_dir_size', 'models_dir']

@@ -8,6 +8,7 @@ import sys
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QColor, QPalette
 
+from logger import log  # initialise logging before anything else
 from theme import STYLESHEET
 from window import MainWindow
 

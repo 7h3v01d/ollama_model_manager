@@ -54,9 +54,11 @@ class MainWindow(
         self._registry_cache: list[dict] = []
         self._bench_worker  = None
         self._bench_thread  = None
-        self._monitor_timer: QTimer | None = None
+        self._monitor_timer:  QTimer | None = None
+        self._monitor_worker  = None
         self._monitor_history: dict = {"cpu": [], "ram": [], "vram": []}
-        self._disk_result: dict = {}
+        self._disk_worker   = None
+        self._disk_result:  dict = {}
 
         self._build_ui()
 
@@ -258,6 +260,14 @@ class MainWindow(
     def _start_worker(self, worker: Worker) -> QThread:
         t = start_worker(worker)
         self._register_thread(t)
+        # Keep a strong Python reference to the worker until its thread
+        # finishes. Without this, CPython can GC the worker object between
+        # _start_worker() returning and the QThread firing started — which
+        # silently drops the thread.started -> worker.run connection.
+        if not hasattr(self, "_worker_refs"):
+            self._worker_refs: set = set()
+        self._worker_refs.add(worker)
+        t.finished.connect(lambda: self._worker_refs.discard(worker))
         return t
 
     # ── Connection ─────────────────────────────────────────────────────

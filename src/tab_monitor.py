@@ -155,6 +155,9 @@ class MonitorMixin:
         worker.stats_ready.connect(thread.quit)
         worker.failed.connect(thread.quit)
         thread.finished.connect(thread.deleteLater)
+        # Hold strong ref to prevent GC before thread fires
+        self._monitor_worker = worker
+        thread.finished.connect(lambda: setattr(self, "_monitor_worker", None))
         self._register_thread(thread)
         thread.start()
 
