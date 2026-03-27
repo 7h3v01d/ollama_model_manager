@@ -184,3 +184,130 @@ def get_system_stats() -> dict:
 #  DISK ANALYSIS HELPER
 # ─────────────────────────────────────────────
 
+
+# ─────────────────────────────────────────────
+#  SERVER REGISTRY  (persisted to disk)
+# ─────────────────────────────────────────────
+
+@dataclass
+class ServerEntry:
+    name:    str          # display label e.g. "Local", "Remote GPU"
+    url:     str          # e.g. "http://localhost:11434"
+    notes:   str = ""
+    active:  bool = False # which one is the current active server
+
+    def to_dict(self) -> dict:
+        return {"name": self.name, "url": self.url,
+                "notes": self.notes, "active": self.active}
+
+    @staticmethod
+    def from_dict(d: dict) -> "ServerEntry":
+        return ServerEntry(
+            name=d.get("name", ""),
+            url=d.get("url", DEFAULT_BASE_URL),
+            notes=d.get("notes", ""),
+            active=d.get("active", False),
+        )
+
+
+class ServerRegistry:
+    """
+    Persists a list of Ollama server entries to a JSON file.
+    Storage: %APPDATA%/KeystoneAI/ollama_manager_servers.json  (Windows)
+             ~/.config/KeystoneAI/ollama_manager_servers.json   (Linux/Mac)
+    """
+
+    def __init__(self):
+        self._path = self._default_path()
+        self._entries: list[ServerEntry] = []
+        self._load()
+
+    @staticmethod
+    def _default_path() -> Path:
+        import platform
+        if platform.system() == "Windows":
+            base = Path(os.environ.get("APPDATA", Path.home()))
+        else:
+            base = Path.home() / ".config"
+        p = base / "KeystoneAI"
+        p.mkdir(parents=True, exist_ok=True)
+        return p / "ollama_manager_servers.json"
+
+    # ── Persistence ───────────────────────────────────────────────────
+
+    def _load(self):
+        try:
+            if self._path.exists():
+                data = json.loads(self._path.read_text(encoding="utf-8"))
+                self._entries = [ServerEntry.from_dict(d) for d in data]
+        except Exception:
+            self._entries = []
+        # Always ensure at least the default local server exists
+        if not self._entries:
+            self._entries = [ServerEntry(
+                name="Local", url=DEFAULT_BASE_URL, active=True)]
+        # Ensure exactly one active
+        active = [e for e in self._entries if e.active]
+        if not active:
+            self._entries[0].active = True
+
+    def _save(self):
+        try:
+            self._path.write_text(
+                json.dumps([e.to_dict() for e in self._entries],
+                           indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
+
+    # ── Public API ────────────────────────────────────────────────────
+
+    def entries(self) -> list[ServerEntry]:
+        return list(self._entries)
+
+    def active(self) -> ServerEntry:
+        for e in self._entries:
+            if e.active:
+                return e
+        return self._entries[0]
+
+    def set_active(self, url: str):
+        for e in self._entries:
+            e.active = (e.url.rstrip("/") == url.rstrip("/"))
+        if not any(e.active for e in self._entries):
+            self._entries[0].active = True
+        self._save()
+
+    def add(self, name: str, url: str, notes: str = "") -> ServerEntry:
+        # Update if URL already exists
+        for e in self._entries:
+            if e.url.rstrip("/") == url.rstrip("/"):
+                e.name  = name
+                e.notes = notes
+                self._save()
+                return e
+        entry = ServerEntry(name=name, url=url, notes=notes)
+        self._entries.append(entry)
+        self._save()
+        return entry
+
+    def remove(self, url: str):
+        was_active = self.active().url.rstrip("/") == url.rstrip("/")
+        self._entries = [e for e in self._entries
+                         if e.url.rstrip("/") != url.rstrip("/")]
+        if not self._entries:
+            self._entries = [ServerEntry(name="Local",
+                                         url=DEFAULT_BASE_URL, active=True)]
+        if was_active:
+            self._entries[0].active = True
+        self._save()
+
+    def rename(self, url: str, new_name: str, new_notes: str = ""):
+        for e in self._entries:
+            if e.url.rstrip("/") == url.rstrip("/"):
+                e.name  = new_name
+                e.notes = new_notes
+                break
+        self._save()
+

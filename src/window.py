@@ -12,16 +12,16 @@ from PyQt6.QtWidgets import (
 )
 
 from theme import STYLESHEET
-from utils import human_bytes, parse_time, default_models_dir_guess
+from utils import human_bytes, parse_time, default_models_dir_guess, ServerRegistry
 from client import OllamaClient
-from utils import DEFAULT_BASE_URL
+# DEFAULT_BASE_URL now sourced via ServerRegistry
 from models import (
     InstalledModelRow, InstalledModelsTableModel,
     RunningModelRow, RunningModelsTableModel,
 )
 from workers import Worker, PullWorker, start_worker
 from widgets import (
-    SectionLabel, Separator, StatCard, ConnectionBar, DetailPanel,
+    SectionLabel, Separator, StatCard, MultiServerBar, DetailPanel,
     ConfirmDeleteDialog, prompt_text,
 )
 from tab_transfer  import TransferMixin
@@ -32,11 +32,16 @@ from tab_modelfile import ModelfileMixin
 from tab_disk      import DiskMixin
 from tab_chat      import ChatMixin
 from tab_about     import AboutMixin
+from tab_servers   import ServersMixin
+from tab_prompts   import PromptsMixin, PromptPickerDialog
+from tab_batch     import BatchMixin
+from prompt_library import PromptLibrary
 
 
 class MainWindow(
     TransferMixin, RegistryMixin, BenchmarkMixin,
-    MonitorMixin, ModelfileMixin, DiskMixin, ChatMixin, AboutMixin,
+    MonitorMixin, ModelfileMixin, DiskMixin, ChatMixin,
+    AboutMixin, ServersMixin, PromptsMixin, BatchMixin,
     QMainWindow,
 ):
     def __init__(self):
@@ -45,7 +50,9 @@ class MainWindow(
         self.resize(1280, 820)
         self.setMinimumSize(960, 640)
 
-        self.client          = OllamaClient(DEFAULT_BASE_URL)
+        self._server_registry  = ServerRegistry()
+        self._prompt_library   = PromptLibrary()
+        self.client           = OllamaClient(self._server_registry.active().url)
         self.installed_model = InstalledModelsTableModel()
         self.running_model   = RunningModelsTableModel()
 
@@ -82,10 +89,13 @@ class MainWindow(
         self.tabs.setDocumentMode(True)
         self.tabs.addTab(self._tab_installed(), "  Installed Models  ")
         self.tabs.addTab(self._tab_running(),   "  Running  ")
+        self.tabs.addTab(self._tab_servers(),   "  Servers  ")
         self.tabs.addTab(self._tab_transfer(),  "  Pull & Backup  ")
         self.tabs.addTab(self._tab_registry(),  "  Registry  ")
         self.tabs.addTab(self._tab_benchmark(), "  Benchmark  ")
         self.tabs.addTab(self._tab_chat(),      "  Chat  ")
+        self.tabs.addTab(self._tab_prompts(),   "  Prompts  ")
+        self.tabs.addTab(self._tab_batch(),     "  Batch  ")
         self.tabs.addTab(self._tab_monitor(),   "  Monitor  ")
         self.tabs.addTab(self._tab_modelfile(), "  Modelfile  ")
         self.tabs.addTab(self._tab_disk(),      "  Disk  ")
@@ -119,8 +129,8 @@ class MainWindow(
         layout.addWidget(Separator(vertical=True))
         layout.addSpacing(12)
 
-        self.conn_bar = ConnectionBar()
-        self.conn_bar.connect_requested.connect(self.on_connect)
+        self.conn_bar = MultiServerBar(self._server_registry)
+        self.conn_bar.server_changed.connect(self.on_server_changed)
         self.conn_bar.filter_input.textChanged.connect(
             self.installed_model.set_filter)
         layout.addWidget(self.conn_bar)
@@ -278,14 +288,25 @@ class MainWindow(
 
     # ── Connection ─────────────────────────────────────────────────────
 
-    def on_connect(self, url: str):
+    def on_server_changed(self, url: str):
+        """Fires when the user picks a different server from the dropdown."""
         if not url:
-            self._err("Error", "Server URL cannot be empty.")
             return
         self.client.set_base_url(url)
-        self._set_status(f"Connecting to {url}…")
+        entry = self._server_registry.active()
+        self._set_status(f"Switched to {entry.name} ({url}) — connecting…")
+        self.conn_bar.set_connected(False)
+        # Clear stale data so old server's models don't show while loading
+        self.installed_model.set_rows([])
+        self.running_model.set_rows([])
+        self.stat_total.set_value("—")
+        self.stat_total_size.set_value("—")
         self.refresh_installed()
         self.refresh_running()
+
+    def on_connect(self, url: str):
+        """Legacy — kept so any remaining callers don't break."""
+        self.on_server_changed(url)
 
     # ── Installed models ───────────────────────────────────────────────
 
@@ -324,6 +345,8 @@ class MainWindow(
                 self._mf_populate_combo()
             if hasattr(self, "chat_model_combo"):
                 self._chat_populate_models()
+            if hasattr(self, "batch_model_combo"):
+                self._batch_populate_models()
 
         def on_fail(msg):
             self.conn_bar.set_connected(False)
@@ -491,12 +514,16 @@ class MainWindow(
             self._set_status("Auto-refresh enabled (every 5 s).")
         else:
             self.running_timer.stop()
+        if hasattr(self, '_prompt_library'):
+            self._prompt_library.close()
             self._set_status("Auto-refresh disabled.")
 
     # ── Shutdown ────────────────────────────────────────────────────────
 
     def closeEvent(self, event):
         self.running_timer.stop()
+        if hasattr(self, '_prompt_library'):
+            self._prompt_library.close()
         if self._monitor_timer is not None:
             self._monitor_timer.stop()
         if self._pull_worker is not None:

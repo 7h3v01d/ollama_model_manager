@@ -24,6 +24,7 @@ from logger import log
 from utils import human_bytes, parse_time
 from workers import Worker, ChatWorker
 from widgets import SectionLabel, Separator
+from prompt_library import PromptLibrary
 
 
 # ── Bubble widget ─────────────────────────────────────────────────────────
@@ -142,6 +143,27 @@ class ChatMixin:
         self.chat_new_btn.setMinimumWidth(70)
         self.chat_new_btn.clicked.connect(self._chat_new_conversation)
         tb.addWidget(self.chat_new_btn)
+
+        self.chat_lib_prompt_btn = QPushButton("📚 Prompt")
+        self.chat_lib_prompt_btn.setMinimumWidth(90)
+        self.chat_lib_prompt_btn.setToolTip("Pick a prompt from the library")
+        self.chat_lib_prompt_btn.clicked.connect(
+            lambda: self._chat_open_picker("prompt"))
+        tb.addWidget(self.chat_lib_prompt_btn)
+
+        self.chat_lib_sys_btn = QPushButton("📚 System")
+        self.chat_lib_sys_btn.setMinimumWidth(90)
+        self.chat_lib_sys_btn.setToolTip("Pick a system prompt from the library")
+        self.chat_lib_sys_btn.clicked.connect(
+            lambda: self._chat_open_picker("system"))
+        tb.addWidget(self.chat_lib_sys_btn)
+
+        self.chat_export_btn = QPushButton("⬇  Export")
+        self.chat_export_btn.setMinimumWidth(85)
+        self.chat_export_btn.setToolTip("Export conversation to Markdown or JSON")
+        self.chat_export_btn.setEnabled(False)
+        self.chat_export_btn.clicked.connect(self._chat_export)
+        tb.addWidget(self.chat_export_btn)
 
         self.chat_token_lbl = QLabel("")
         self.chat_token_lbl.setStyleSheet("color:#374151; font-size:11px;")
@@ -274,6 +296,7 @@ class ChatMixin:
         self._chat_history = []
         self._chat_total_tokens = 0
         self.chat_token_lbl.setText("")
+        self.chat_export_btn.setEnabled(False)
         # Clear bubbles (keep the stretch at index 0)
         while self.chat_bubbles_layout.count() > 1:
             item = self.chat_bubbles_layout.takeAt(1)
@@ -306,6 +329,112 @@ class ChatMixin:
         return temp, ctx
 
     # ── Send / Stop ───────────────────────────────────────────────────────
+
+    def _chat_export(self):
+        """Export the current conversation to Markdown or plain JSON."""
+        if not self._chat_history:
+            return
+        from PyQt6.QtWidgets import QFileDialog
+        from datetime import datetime as _dt
+        import json as _json
+
+        ts    = _dt.now().strftime("%Y%m%d_%H%M%S")
+        model = self.chat_model_combo.currentText().replace(":", "_").replace("/", "_")
+        default = str(__import__("pathlib").Path.home() / f"chat_{model}_{ts}")
+
+        path, filt = QFileDialog.getSaveFileName(
+            self, "Export Conversation",
+            default,
+            "Markdown (*.md);;JSON (*.json);;Plain text (*.txt)"
+        )
+        if not path:
+            return
+
+        try:
+            if "JSON" in filt or path.endswith(".json"):
+                if not path.endswith(".json"):
+                    path += ".json"
+                payload = {
+                    "model":     self.chat_model_combo.currentText(),
+                    "exported":  _dt.now().isoformat(),
+                    "system":    self.chat_system_input.toPlainText().strip(),
+                    "messages":  self._chat_history,
+                }
+                __import__("pathlib").Path(path).write_text(
+                    _json.dumps(payload, indent=2, ensure_ascii=False),
+                    encoding="utf-8")
+
+            elif "Plain" in filt or path.endswith(".txt"):
+                if not path.endswith(".txt"):
+                    path += ".txt"
+                lines = []
+                system = self.chat_system_input.toPlainText().strip()
+                if system:
+                    lines += [f"[System]\n{system}", ""]
+                for msg in self._chat_history:
+                    role = msg["role"].upper()
+                    lines += [f"[{role}]", msg["content"], ""]
+                __import__("pathlib").Path(path).write_text(
+                    "\n".join(lines), encoding="utf-8")
+
+            else:
+                # Markdown (default)
+                if not path.endswith(".md"):
+                    path += ".md"
+                lines = []
+                model_name = self.chat_model_combo.currentText()
+                lines.append(
+                    f"# Conversation — {model_name}  \n"
+                    f"*Exported {_dt.now().strftime('%Y-%m-%d %H:%M:%S')}*\n"
+                )
+                system = self.chat_system_input.toPlainText().strip()
+                if system:
+                    lines.append(
+                        f"---\n\n**System prompt:**\n\n"
+                        f"> {system.replace(chr(10), chr(10)+'> ')}\n"
+                    )
+                lines.append("---\n")
+                ROLE_LABELS = {
+                    "user":      "**You**",
+                    "assistant": f"**{model_name}**",
+                    "system":    "_System_",
+                }
+                for msg in self._chat_history:
+                    role  = msg["role"]
+                    label = ROLE_LABELS.get(role, f"**{role}**")
+                    body  = msg["content"].strip()
+                    if role == "assistant":
+                        body = f"```\n{body}\n```"
+                    lines.append(f"{label}\n\n{body}\n")
+                    lines.append("---\n")
+                __import__("pathlib").Path(path).write_text(
+                    "\n".join(lines), encoding="utf-8")
+
+            self._set_status(
+                f"Conversation exported to {__import__('pathlib').Path(path).name}")
+            log.info("ChatMixin: exported to %s", path)
+
+        except Exception as e:
+            self._err("Export Failed", str(e))
+            log.exception("ChatMixin: export failed: %s", e)
+
+    def _chat_open_picker(self, kind: str):
+        """Open the prompt picker dialog filtered by kind."""
+        from tab_prompts import PromptPickerDialog
+        title = ("Pick a System Prompt" if kind == "system"
+                 else "Pick a Prompt")
+        dlg = PromptPickerDialog(
+            self._prompt_library, kind=kind, title=title, parent=self)
+        def _on_selected(entry):
+            if entry.kind == "system":
+                self.chat_system_input.setPlainText(entry.content)
+            else:
+                self.chat_input.setPlainText(entry.content)
+            self._set_status(
+                f"'{entry.title}' loaded into "
+                f"{'system prompt' if entry.kind == 'system' else 'message input'}.")
+        dlg.selected.connect(_on_selected)
+        dlg.exec()
 
     def eventFilter(self, obj, event):
         """Ctrl+Enter sends the message from the input box."""
@@ -383,6 +512,7 @@ class ChatMixin:
     def _chat_on_finished(self, last_obj: dict):
         self.chat_send_btn.setEnabled(True)
         self.chat_stop_btn.setEnabled(False)
+        self.chat_export_btn.setEnabled(bool(self._chat_history))
 
         # Capture completed assistant response into history
         if self._chat_active_bubble:

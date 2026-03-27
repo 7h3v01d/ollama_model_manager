@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import (
     QToolBar, QVBoxLayout, QWidget, QAbstractItemView,
 )
 
-from utils import human_bytes, parse_time, DEFAULT_BASE_URL
+from utils import human_bytes, parse_time, DEFAULT_BASE_URL, ServerRegistry
 from models import InstalledModelsTableModel, RunningModelsTableModel
 from workers import BenchResult
 
@@ -81,40 +81,58 @@ class StatCard(QFrame):
         self.value_lbl.setText(v)
 
 
-class ConnectionBar(QWidget):
-    connect_requested = pyqtSignal(str)
 
-    def __init__(self, parent=None):
+class MultiServerBar(QWidget):
+    """
+    Header bar showing the active server with a dropdown of all saved
+    servers.  Emits server_changed(url) when the user switches.
+    """
+    server_changed = pyqtSignal(str)   # emits the new active URL
+
+    def __init__(self, registry, parent=None):
         super().__init__(parent)
+        self._registry = registry
+
         layout = QHBoxLayout(self)
         layout.setContentsMargins(12, 6, 12, 6)
         layout.setSpacing(10)
 
-        # Server icon/label
-        icon_lbl = QLabel("⬡")
-        icon_lbl.setStyleSheet("color: #3b82f6; font-size: 20px;")
-        layout.addWidget(icon_lbl)
+        icon = QLabel("⬡")
+        icon.setStyleSheet("color:#3b82f6; font-size:20px;")
+        layout.addWidget(icon)
 
-        url_label = QLabel("SERVER")
-        url_label.setObjectName("label_section")
-        layout.addWidget(url_label)
+        srv_label = QLabel("SERVER")
+        srv_label.setObjectName("label_section")
+        layout.addWidget(srv_label)
 
-        self.url_input = QLineEdit(DEFAULT_BASE_URL)
-        self.url_input.setPlaceholderText("http://localhost:11434")
-        self.url_input.setMaximumWidth(280)
-        self.url_input.setMinimumWidth(200)
-        layout.addWidget(self.url_input)
+        # Server selector dropdown
+        self.server_combo = QComboBox()
+        self.server_combo.setMinimumWidth(200)
+        self.server_combo.setMaximumWidth(280)
+        self._rebuild_combo()
+        self.server_combo.currentIndexChanged.connect(self._on_combo_changed)
+        layout.addWidget(self.server_combo)
 
-        self.connect_btn = QPushButton("Connect")
-        self.connect_btn.setObjectName("btn_primary")
-        self.connect_btn.setMinimumWidth(90)
-        self.connect_btn.clicked.connect(self._emit_connect)
-        layout.addWidget(self.connect_btn)
+        # Add server button
+        self.add_btn = QPushButton("+")
+        self.add_btn.setFixedWidth(30)
+        self.add_btn.setFixedHeight(28)
+        self.add_btn.setToolTip("Add server")
+        self.add_btn.clicked.connect(self._on_add)
+        layout.addWidget(self.add_btn)
+
+        # Remove server button
+        self.remove_btn = QPushButton("−")
+        self.remove_btn.setFixedWidth(30)
+        self.remove_btn.setFixedHeight(28)
+        self.remove_btn.setToolTip("Remove selected server")
+        self.remove_btn.clicked.connect(self._on_remove)
+        layout.addWidget(self.remove_btn)
 
         layout.addWidget(Separator(vertical=True))
 
         # Status badge
-        self.badge = QLabel("OFFLINE")
+        self.badge = QLabel("● OFFLINE")
         self.badge.setObjectName("conn_badge_disconnected")
         layout.addWidget(self.badge)
 
@@ -131,18 +149,93 @@ class ConnectionBar(QWidget):
         self.filter_input.setMaximumWidth(220)
         layout.addWidget(self.filter_input)
 
-    def _emit_connect(self):
-        self.connect_requested.emit(self.url_input.text().strip())
+    # ── Combo management ──────────────────────────────────────────────
+
+    def _rebuild_combo(self):
+        self.server_combo.blockSignals(True)
+        self.server_combo.clear()
+        active_url = self._registry.active().url
+        for i, entry in enumerate(self._registry.entries()):
+            self.server_combo.addItem(f"{entry.name}  —  {entry.url}", userData=entry.url)
+            if entry.url.rstrip("/") == active_url.rstrip("/"):
+                self.server_combo.setCurrentIndex(i)
+        self.server_combo.blockSignals(False)
+
+    def active_url(self) -> str:
+        url = self.server_combo.currentData()
+        return url or self._registry.active().url
 
     def set_connected(self, connected: bool):
+        entry = self._registry.active()
+        label = entry.name
         if connected:
-            self.badge.setText("● CONNECTED")
+            self.badge.setText(f"● {label.upper()}  CONNECTED")
             self.badge.setObjectName("conn_badge_connected")
         else:
-            self.badge.setText("● OFFLINE")
+            self.badge.setText(f"● {label.upper()}  OFFLINE")
             self.badge.setObjectName("conn_badge_disconnected")
-        # Force style refresh
         self.badge.setStyle(self.badge.style())
+
+    def refresh(self):
+        """Rebuild combo from registry (call after add/remove/rename)."""
+        self._rebuild_combo()
+        self.set_connected(False)
+
+    # ── Slots ─────────────────────────────────────────────────────────
+
+    def _on_combo_changed(self, index: int):
+        if index < 0:
+            return
+        url = self.server_combo.itemData(index)
+        if url:
+            self._registry.set_active(url)
+            self.server_changed.emit(url)
+
+    def _on_add(self):
+        from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QFormLayout
+        dlg = QDialog()
+        dlg.setWindowTitle("Add Server")
+        dlg.setModal(True)
+        dlg.resize(400, 160)
+        dlg.setStyleSheet("QDialog{background:#111827;border:1px solid #1e2533;}")
+        fl = QFormLayout(dlg)
+        fl.setContentsMargins(20, 20, 20, 16)
+        fl.setSpacing(12)
+        name_input = QLineEdit("Remote")
+        url_input  = QLineEdit("http://")
+        url_input.setPlaceholderText("http://192.168.1.x:11434")
+        notes_input = QLineEdit()
+        notes_input.setPlaceholderText("Optional notes")
+        fl.addRow("Name:",  name_input)
+        fl.addRow("URL:",   url_input)
+        fl.addRow("Notes:", notes_input)
+        btns = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok |
+            QDialogButtonBox.StandardButton.Cancel)
+        btns.accepted.connect(dlg.accept)
+        btns.rejected.connect(dlg.reject)
+        fl.addRow(btns)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            name = name_input.text().strip() or "Server"
+            url  = url_input.text().strip()
+            if url and url != "http://":
+                self._registry.add(name, url, notes_input.text().strip())
+                self._registry.set_active(url)
+                self._rebuild_combo()
+                self.server_changed.emit(url)
+
+    def _on_remove(self):
+        url = self.active_url()
+        if url == DEFAULT_BASE_URL and len(self._registry.entries()) == 1:
+            return   # don't remove the last server
+        self._registry.remove(url)
+        self._rebuild_combo()
+        new_url = self._registry.active().url
+        self.server_changed.emit(new_url)
+
+
+# Keep ConnectionBar as an alias so any code still referencing it won't break
+ConnectionBar = MultiServerBar
 
 
 class DetailPanel(QWidget):

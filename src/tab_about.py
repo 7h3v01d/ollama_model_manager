@@ -82,6 +82,10 @@ class AboutMixin:
             ("Running",
              "Live view of models currently loaded in memory via /api/ps. "
              "Auto-refresh every 5 s."),
+            ("Servers",
+             "Manage multiple Ollama server connections. Ping each server, view "
+             "model counts and latency, add/remove/edit, and switch active server. "
+             "Config persists to disk between sessions."),
             ("Pull & Backup",
              "Stream model downloads with live progress. Export selected models or the "
              "entire store to a ZIP archive (manifest + blobs). Import archives back."),
@@ -92,6 +96,14 @@ class AboutMixin:
              "Race installed models head-to-head on a prompt. Reports tokens/s, "
              "time-to-first-token, and total wall time. Evicts each model from VRAM "
              "after its run so later models aren't competing for memory."),
+            ("Batch Runner",
+             "Load prompts from JSONL, CSV, or plain text and run them against a model "
+             "sequentially. Live per-row status in a results table. Export results to "
+             "JSONL or CSV with prompt, response, tokens/s, and timing columns."),
+            ("Prompts",
+             "Prompt library backed by SQLite. Browse, create, edit, tag and search "
+             "saved prompts and system prompts. One-click inject into the Chat tab. "
+             "Seeded with useful defaults on first run."),
             ("Chat",
              "Full streaming conversation panel. Ctrl+Enter to send. Maintains full "
              "conversation history across turns. System prompt editor, temperature, "

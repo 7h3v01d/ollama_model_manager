@@ -250,6 +250,134 @@ class ChatWorker(Worker):
             self.failed.emit(str(e))
 
 
+
+# ─────────────────────────────────────────────
+#  BATCH PROMPT WORKER
+# ─────────────────────────────────────────────
+
+@dataclass
+class BatchRunResult:
+    """Result for one prompt in a batch run."""
+    row_idx:      int
+    prompt:       str
+    system:       str        = ""
+    model:        str        = ""
+    response:     str        = ""
+    error:        str        = ""
+    prompt_tokens: int       = 0
+    eval_tokens:  int        = 0
+    total_ms:     float      = 0.0
+    tokens_per_sec: float    = 0.0
+    status:       str        = "pending"   # pending | running | done | error
+
+
+class BatchRunWorker(Worker):
+    """
+    Runs a list of prompts sequentially against one model using /api/chat.
+    Emits row_done(result) after each prompt completes.
+    Stopable mid-run.
+    """
+    row_done = pyqtSignal(object)   # BatchRunResult
+
+    def __init__(self, client: OllamaClient, model: str,
+                 rows: list[dict],
+                 system: str = "",
+                 temperature: float | None = None,
+                 num_ctx: int | None = None):
+        """
+        rows: list of {"prompt": str, "system": str (optional override)}
+        """
+        super().__init__()
+        self.client      = client
+        self.model       = model
+        self.rows        = rows
+        self.system      = system
+        self.temperature = temperature
+        self.num_ctx     = num_ctx
+        self._stop       = False
+
+    def stop(self):
+        self._stop = True
+
+    @pyqtSlot()
+    def run(self):
+        from logger import log
+        import time as _time
+        log.info("BatchRunWorker.run: model=%s  rows=%d", self.model, len(self.rows))
+        results = []
+
+        for idx, row in enumerate(self.rows):
+            if self._stop:
+                log.info("BatchRunWorker: stopped at row %d", idx)
+                break
+
+            prompt = row.get("prompt", "").strip()
+            system = row.get("system", self.system) or self.system
+            if not prompt:
+                res = BatchRunResult(
+                    row_idx=idx, prompt=prompt, model=self.model,
+                    system=system, status="error", error="Empty prompt")
+                self.row_done.emit(res)
+                results.append(res)
+                continue
+
+            res = BatchRunResult(
+                row_idx=idx, prompt=prompt, model=self.model,
+                system=system, status="running")
+            self.row_done.emit(res)
+
+            try:
+                messages = [{"role": "user", "content": prompt}]
+                t0 = _time.perf_counter()
+                parts = []
+                last_obj: dict = {}
+
+                for obj in self.client.chat_stream(
+                    self.model, messages,
+                    system=system,
+                    temperature=self.temperature,
+                    num_ctx=self.num_ctx,
+                ):
+                    if self._stop:
+                        break
+                    delta = (obj.get("message") or {}).get("content", "")
+                    if delta:
+                        parts.append(delta)
+                    last_obj = obj
+                    if obj.get("done"):
+                        break
+
+                elapsed_ms = (_time.perf_counter() - t0) * 1000
+                eval_count   = last_obj.get("eval_count", 0) or 0
+                prompt_count = last_obj.get("prompt_eval_count", 0) or 0
+                eval_dur_ns  = last_obj.get("eval_duration", 0) or 1
+                tps = eval_count / (eval_dur_ns / 1e9) if eval_count else 0.0
+
+                res.response      = "".join(parts).strip()
+                res.total_ms      = elapsed_ms
+                res.eval_tokens   = eval_count
+                res.prompt_tokens = prompt_count
+                res.tokens_per_sec = tps
+                res.status        = "done"
+                log.info("BatchRunWorker: row %d done  tps=%.1f  tokens=%d",
+                         idx, tps, eval_count)
+
+            except Exception as e:
+                res.response = ""
+                res.error    = str(e)
+                res.status   = "error"
+                log.exception("BatchRunWorker: row %d failed: %s", idx, e)
+
+            self.row_done.emit(res)
+            results.append(res)
+
+            # Evict model from VRAM if this is the last row
+            if idx == len(self.rows) - 1:
+                self.client.unload_model(self.model)
+
+        self.finished.emit(results)
+
+
 # ─────────────────────────────────────────────
 #  REGISTRY WORKER
 # ─────────────────────────────────────────────

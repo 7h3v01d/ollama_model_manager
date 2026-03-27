@@ -35,7 +35,13 @@ def _build_logger() -> logging.Logger:
     logger.addHandler(ch)
 
     # ── File handler ──────────────────────────────────────────────────
-    log_dir = Path(__file__).parent
+    # When frozen by PyInstaller, __file__ points inside the temp
+    # extraction dir (_MEIPASS). Write the log next to the .exe instead.
+    import sys as _sys
+    if getattr(_sys, 'frozen', False):
+        log_dir = Path(_sys.executable).parent
+    else:
+        log_dir = Path(__file__).parent
     log_path = log_dir / "ollama_manager.log"
 
     try:
