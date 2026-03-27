@@ -131,6 +131,42 @@ class OllamaClient:
                 except json.JSONDecodeError:
                     yield {"raw": line}
 
+    def chat_stream(self, model: str, messages: list[dict],
+                    system: str = "", temperature: float | None = None,
+                    num_ctx: int | None = None):
+        """
+        Stream chat completions from /api/chat.
+
+        messages: list of {"role": "user"|"assistant"|"system", "content": str}
+        Yields each response object from the NDJSON stream.
+        """
+        payload: dict = {"model": model, "messages": messages, "stream": True}
+        if system:
+            payload["system"] = system
+        options: dict = {}
+        if temperature is not None:
+            options["temperature"] = temperature
+        if num_ctx is not None:
+            options["num_ctx"] = num_ctx
+        if options:
+            payload["options"] = options
+
+        with self.session.post(
+            self._url("/api/chat"),
+            data=__import__("json").dumps(payload),
+            timeout=120,
+            stream=True,
+        ) as r:
+            r.raise_for_status()
+            for line in r.iter_lines(decode_unicode=True):
+                if not line:
+                    continue
+                try:
+                    yield __import__("json").loads(line)
+                except __import__("json").JSONDecodeError:
+                    yield {"raw": line}
+
+
     def fetch_registry_models(self) -> list[dict]:
         """
         Fetch model list from ollama.com.

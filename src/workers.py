@@ -197,6 +197,59 @@ def start_worker(worker: Worker) -> QThread:
 
 
 
+
+# ─────────────────────────────────────────────
+#  CHAT WORKER
+# ─────────────────────────────────────────────
+
+class ChatWorker(Worker):
+    """Streams /api/chat responses token by token."""
+    token = pyqtSignal(str)       # each text delta
+    chunk = pyqtSignal(dict)      # full raw chunk (for metadata)
+
+    def __init__(self, client: OllamaClient, model: str,
+                 messages: list, system: str = "",
+                 temperature: float | None = None,
+                 num_ctx: int | None = None):
+        super().__init__()
+        self.client      = client
+        self.model       = model
+        self.messages    = messages
+        self.system      = system
+        self.temperature = temperature
+        self.num_ctx     = num_ctx
+        self._stop       = False
+
+    def stop(self):
+        self._stop = True
+
+    @pyqtSlot()
+    def run(self):
+        from logger import log
+        log.info("ChatWorker.run: model=%s  messages=%d", self.model, len(self.messages))
+        try:
+            last = None
+            for obj in self.client.chat_stream(
+                self.model, self.messages,
+                system=self.system,
+                temperature=self.temperature,
+                num_ctx=self.num_ctx,
+            ):
+                if self._stop:
+                    break
+                self.chunk.emit(obj)
+                delta = (obj.get("message") or {}).get("content", "")
+                if delta:
+                    self.token.emit(delta)
+                last = obj
+                if obj.get("done"):
+                    break
+            self.finished.emit(last or {})
+        except Exception as e:
+            log.exception("ChatWorker.run: exception: %s", e)
+            self.failed.emit(str(e))
+
+
 # ─────────────────────────────────────────────
 #  REGISTRY WORKER
 # ─────────────────────────────────────────────

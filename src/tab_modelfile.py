@@ -1,42 +1,32 @@
 """
 Mixin — imported via multiple inheritance into MainWindow.
-All methods reference self which is a MainWindow instance.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from window import MainWindow
 
-import json, os, re, subprocess, sys, time, zipfile, tempfile
-from datetime import datetime
+import os, re, subprocess, tempfile
 from pathlib import Path
-
-import requests
-from PyQt6.QtCore import Qt, QModelIndex, QThread, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QCheckBox, QComboBox, QFileDialog, QFrame, QGroupBox,
-    QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMessageBox,
-    QPushButton, QProgressBar, QScrollArea, QSplitter,
-    QTableView, QTextEdit, QVBoxLayout, QWidget)
-from utils import (
-    human_bytes, parse_time, safe_mkdir, default_models_dir_guess,
-    get_system_stats,
-    blob_filename_from_digest)
-from workers import (
-    Worker, PullWorker, ExportImportWorker, start_worker,
-    RegistryFetchWorker, BenchmarkWorker, BenchResult,
-    ResourceMonitorWorker, DiskAnalysisWorker)
-from widgets import (
-    SectionLabel, Separator, StatCard, GaugeBar, GaugeCard,
-    MonitorSparkWidget, ModelfileHighlighter, RegistryModelCard,
-    TagsDialog, BenchResultCard, ConfirmDeleteDialog, prompt_text)
-from models import (
-    analyse_disk,
-    InstalledModelRow, RunningModelRow,
-    InstalledModelsTableModel, RunningModelsTableModel)
+    QComboBox,
+    QFileDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSplitter,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
-
+from utils import default_models_dir_guess
+from workers import Worker
+from widgets import SectionLabel, Separator, ModelfileHighlighter, prompt_text
+from models import InstalledModelsTableModel
 class ModelfileMixin:
     _MODELFILE_TEMPLATE = 'FROM {base_model}\n\n# System prompt\nSYSTEM """\nYou are a helpful assistant.\n"""\n\n# Inference parameters\nPARAMETER temperature 0.7\nPARAMETER top_p 0.9\nPARAMETER top_k 40\nPARAMETER num_ctx 4096\nPARAMETER repeat_penalty 1.1\n'
 

@@ -30,11 +30,13 @@ from tab_benchmark import BenchmarkMixin
 from tab_monitor   import MonitorMixin
 from tab_modelfile import ModelfileMixin
 from tab_disk      import DiskMixin
+from tab_chat      import ChatMixin
+from tab_about     import AboutMixin
 
 
 class MainWindow(
     TransferMixin, RegistryMixin, BenchmarkMixin,
-    MonitorMixin, ModelfileMixin, DiskMixin,
+    MonitorMixin, ModelfileMixin, DiskMixin, ChatMixin, AboutMixin,
     QMainWindow,
 ):
     def __init__(self):
@@ -52,7 +54,8 @@ class MainWindow(
         self._pull_thread:  QThread | None = None
 
         self._registry_cache: list[dict] = []
-        self._reg_worker = None
+        self._reg_worker  = None
+        self._chat_worker = None
         self._bench_worker  = None
         self._bench_thread  = None
         self._monitor_timer:  QTimer | None = None
@@ -82,9 +85,11 @@ class MainWindow(
         self.tabs.addTab(self._tab_transfer(),  "  Pull & Backup  ")
         self.tabs.addTab(self._tab_registry(),  "  Registry  ")
         self.tabs.addTab(self._tab_benchmark(), "  Benchmark  ")
+        self.tabs.addTab(self._tab_chat(),      "  Chat  ")
         self.tabs.addTab(self._tab_monitor(),   "  Monitor  ")
         self.tabs.addTab(self._tab_modelfile(), "  Modelfile  ")
         self.tabs.addTab(self._tab_disk(),      "  Disk  ")
+        self.tabs.addTab(self._tab_about(),     "  About  ")
 
         self._status_bar = QStatusBar()
         self._status_bar.setSizeGripEnabled(False)
@@ -317,6 +322,8 @@ class MainWindow(
             self.conn_bar.set_connected(True)
             if hasattr(self, "mf_base_combo"):
                 self._mf_populate_combo()
+            if hasattr(self, "chat_model_combo"):
+                self._chat_populate_models()
 
         def on_fail(msg):
             self.conn_bar.set_connected(False)

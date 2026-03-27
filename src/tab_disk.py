@@ -1,43 +1,30 @@
 """
 Mixin — imported via multiple inheritance into MainWindow.
-All methods reference self which is a MainWindow instance.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from window import MainWindow
 
-import json, os, re, subprocess, sys, time, zipfile, tempfile
-from logger import log
-from datetime import datetime
 from pathlib import Path
-
-import requests
-from PyQt6.QtCore import Qt, QModelIndex, QThread, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QCheckBox, QComboBox, QFileDialog, QFrame, QGroupBox,
-    QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMessageBox,
-    QPushButton, QProgressBar, QScrollArea, QSplitter,
-    QTableView, QTextEdit, QVBoxLayout, QWidget)
-from utils import (
-    human_bytes, parse_time, safe_mkdir, default_models_dir_guess,
-    get_system_stats,
-    blob_filename_from_digest)
-from workers import (
-    Worker, PullWorker, ExportImportWorker, start_worker,
-    RegistryFetchWorker, BenchmarkWorker, BenchResult,
-    ResourceMonitorWorker, DiskAnalysisWorker)
-from widgets import (
-    SectionLabel, Separator, StatCard, GaugeBar, GaugeCard,
-    MonitorSparkWidget, ModelfileHighlighter, RegistryModelCard,
-    TagsDialog, BenchResultCard, ConfirmDeleteDialog, prompt_text)
-from models import (
-    analyse_disk,
-    InstalledModelRow, RunningModelRow,
-    InstalledModelsTableModel, RunningModelsTableModel)
+    QFileDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
-
+from logger import log
+from utils import human_bytes, default_models_dir_guess, blob_filename_from_digest
+from workers import Worker, DiskAnalysisWorker
+from widgets import SectionLabel, Separator, StatCard, GaugeBar, ConfirmDeleteDialog, prompt_text
+from models import analyse_disk, find_manifest_file, parse_manifest_for_digests, InstalledModelsTableModel
 class DiskMixin:
     def _tab_disk(self) -> QWidget:
         container = QWidget()

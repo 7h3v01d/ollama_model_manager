@@ -1,42 +1,31 @@
 """
 Mixin — imported via multiple inheritance into MainWindow.
-All methods reference self which is a MainWindow instance.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from window import MainWindow
 
-import json, os, re, subprocess, sys, time, zipfile, tempfile
-from datetime import datetime
-from pathlib import Path
-
-import requests
-from PyQt6.QtCore import Qt, QModelIndex, QThread, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QCheckBox, QComboBox, QFileDialog, QFrame, QGroupBox,
-    QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMessageBox,
-    QPushButton, QProgressBar, QScrollArea, QSplitter,
-    QTableView, QTextEdit, QVBoxLayout, QWidget)
-from utils import (
-    human_bytes, parse_time, safe_mkdir, default_models_dir_guess,
-    get_system_stats,
-    blob_filename_from_digest)
-from workers import (
-    Worker, PullWorker, ExportImportWorker, start_worker,
-    RegistryFetchWorker, BenchmarkWorker, BenchResult,
-    ResourceMonitorWorker, DiskAnalysisWorker)
-from widgets import (
-    SectionLabel, Separator, StatCard, GaugeBar, GaugeCard,
-    MonitorSparkWidget, ModelfileHighlighter, RegistryModelCard,
-    TagsDialog, BenchResultCard, ConfirmDeleteDialog, prompt_text)
-from models import (
-    analyse_disk,
-    InstalledModelRow, RunningModelRow,
-    InstalledModelsTableModel, RunningModelsTableModel)
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QProgressBar,
+    QPushButton,
+    QScrollArea,
+    QTableView,
+    QVBoxLayout,
+    QWidget,
+)
 
-
+from utils import human_bytes
+from workers import Worker, BenchmarkWorker, BenchResult, start_worker
+from widgets import SectionLabel, Separator, StatCard, BenchResultCard
+from models import InstalledModelsTableModel
 class BenchmarkMixin:
     def _tab_benchmark(self) -> QWidget:
         container = QWidget()

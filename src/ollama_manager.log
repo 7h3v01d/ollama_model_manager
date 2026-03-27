@@ -212,3 +212,310 @@ NameError: name 'normalize_model_name' is not defined
 18:05:55  INFO      workers:221  —  RegistryFetchWorker: tags fetched for wizard-vicuna — 17 tags
 18:06:32  INFO      workers:216  —  RegistryFetchWorker.run: start  fetch_tags_for='llama3'
 18:06:34  INFO      workers:221  —  RegistryFetchWorker: tags fetched for llama3 — 40 tags
+18:29:08  INFO      logger:46  —  ============================================================
+18:29:08  INFO      logger:47  —  Ollama Manager Pro — session started 2026-03-27 18:29:08
+18:29:08  INFO      logger:49  —  Log file: G:\Projects\Ollama Projects\ollama_manager_pro\src\ollama_manager.log
+18:29:22  INFO      logger:46  —  ============================================================
+18:29:22  INFO      logger:47  —  Ollama Manager Pro — session started 2026-03-27 18:29:22
+18:29:22  INFO      logger:49  —  Log file: G:\Projects\Ollama Projects\ollama_manager_pro\src\ollama_manager.log
+18:30:02  INFO      tab_registry:77  —  _reg_fetch: launching RegistryFetchWorker
+18:30:02  INFO      workers:269  —  RegistryFetchWorker.run: start  fetch_tags_for=''
+18:30:02  INFO      client:222  —  registry: trying JSON search API
+18:30:04  INFO      client:232  —  registry API: GET /search {'q': '', 'p': 1, 'per_page': 50} -> 200 text/html; charset=utf-8
+18:30:04  DEBUG     client:234  —  registry API: body[:400]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="Ollama" />
+    <meta property="og:description" content="Search for models on Ollama." 
+18:30:04  WARNING   client:239  —  registry API: non-JSON content-type: text/html; charset=utf-8 — body: 
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:ti
+18:30:04  INFO      client:232  —  registry API: GET /search {'q': '', 'page': 1, 'per_page': 50} -> 200 text/html; charset=utf-8
+18:30:04  DEBUG     client:234  —  registry API: body[:400]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="Ollama" />
+    <meta property="og:description" content="Search for models on Ollama." 
+18:30:04  WARNING   client:239  —  registry API: non-JSON content-type: text/html; charset=utf-8 — body: 
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:ti
+18:30:05  INFO      client:232  —  registry API: GET /search {'q': '', 'p': 1, 'limit': 50} -> 200 text/html; charset=utf-8
+18:30:05  DEBUG     client:234  —  registry API: body[:400]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="Ollama" />
+    <meta property="og:description" content="Search for models on Ollama." 
+18:30:05  WARNING   client:239  —  registry API: non-JSON content-type: text/html; charset=utf-8 — body: 
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:ti
+18:30:05  INFO      client:279  —  registry: JSON API gave 0 models, trying HTML scrape
+18:30:06  INFO      client:283  —  registry HTML: status=200  content-type=text/html; charset=utf-8  len=761869
+18:30:06  DEBUG     client:285  —  registry HTML: body[:600]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>library</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Browse Ollama's library of models."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="library" />
+    <meta property="og:description" content="Browse Ollama's library of models." />
+    <meta property="og:url" content="https://ollama.com/library" />
+    <meta property="og:image" content="https://ollama.com/public/og.png" />
+    <meta property="og:image:type" cont
+18:30:06  WARNING   client:313  —  registry HTML: no __NEXT_DATA__ script tag found
+18:30:06  INFO      client:316  —  registry: trying href regex scrape
+18:30:06  INFO      client:318  —  registry href scrape: found 187 slugs: ['deepseek-r1', 'nomic-embed-text', 'gemma3', 'mistral', 'qwen3', 'llama3', 'gemma2', 'phi3', 'llava', 'mxbai-embed-large']
+18:30:06  INFO      client:327  —  registry: href scrape gave 187 models
+18:30:06  INFO      workers:283  —  RegistryFetchWorker: fetch_registry_models returned 187 models
+18:39:39  INFO      logger:46  —  ============================================================
+18:39:39  INFO      logger:47  —  Ollama Manager Pro — session started 2026-03-27 18:39:39
+18:39:39  INFO      logger:49  —  Log file: G:\Projects\Ollama Projects\ollama_manager_pro\src\ollama_manager.log
+18:40:09  INFO      tab_chat:351  —  ChatMixin: send  model=llama3.1:latest  history_len=1
+18:40:09  INFO      workers:229  —  ChatWorker.run: model=llama3.1:latest  messages=1
+18:40:25  INFO      tab_chat:406  —  ChatMixin: finished  eval=26  tps=13.2
+18:41:02  INFO      tab_chat:351  —  ChatMixin: send  model=dolphin3:8b  history_len=3
+18:41:02  INFO      workers:229  —  ChatWorker.run: model=dolphin3:8b  messages=3
+18:41:04  INFO      tab_chat:406  —  ChatMixin: finished  eval=42  tps=79.6
+18:43:24  INFO      tab_registry:77  —  _reg_fetch: launching RegistryFetchWorker
+18:43:24  INFO      workers:269  —  RegistryFetchWorker.run: start  fetch_tags_for=''
+18:43:24  INFO      client:222  —  registry: trying JSON search API
+18:43:25  INFO      client:232  —  registry API: GET /search {'q': '', 'p': 1, 'per_page': 50} -> 200 text/html; charset=utf-8
+18:43:25  DEBUG     client:234  —  registry API: body[:400]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="Ollama" />
+    <meta property="og:description" content="Search for models on Ollama." 
+18:43:25  WARNING   client:239  —  registry API: non-JSON content-type: text/html; charset=utf-8 — body: 
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:ti
+18:43:26  INFO      client:232  —  registry API: GET /search {'q': '', 'page': 1, 'per_page': 50} -> 200 text/html; charset=utf-8
+18:43:26  DEBUG     client:234  —  registry API: body[:400]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="Ollama" />
+    <meta property="og:description" content="Search for models on Ollama." 
+18:43:26  WARNING   client:239  —  registry API: non-JSON content-type: text/html; charset=utf-8 — body: 
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:ti
+18:43:26  INFO      client:232  —  registry API: GET /search {'q': '', 'p': 1, 'limit': 50} -> 200 text/html; charset=utf-8
+18:43:26  DEBUG     client:234  —  registry API: body[:400]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="Ollama" />
+    <meta property="og:description" content="Search for models on Ollama." 
+18:43:26  WARNING   client:239  —  registry API: non-JSON content-type: text/html; charset=utf-8 — body: 
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:ti
+18:43:26  INFO      client:279  —  registry: JSON API gave 0 models, trying HTML scrape
+18:43:28  INFO      client:283  —  registry HTML: status=200  content-type=text/html; charset=utf-8  len=761863
+18:43:28  DEBUG     client:285  —  registry HTML: body[:600]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>library</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Browse Ollama's library of models."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="library" />
+    <meta property="og:description" content="Browse Ollama's library of models." />
+    <meta property="og:url" content="https://ollama.com/library" />
+    <meta property="og:image" content="https://ollama.com/public/og.png" />
+    <meta property="og:image:type" cont
+18:43:28  WARNING   client:313  —  registry HTML: no __NEXT_DATA__ script tag found
+18:43:28  INFO      client:316  —  registry: trying href regex scrape
+18:43:28  INFO      client:318  —  registry href scrape: found 187 slugs: ['deepseek-r1', 'nomic-embed-text', 'gemma3', 'mistral', 'qwen3', 'llama3', 'gemma2', 'phi3', 'llava', 'mxbai-embed-large']
+18:43:28  INFO      client:327  —  registry: href scrape gave 187 models
+18:43:28  INFO      workers:283  —  RegistryFetchWorker: fetch_registry_models returned 187 models
