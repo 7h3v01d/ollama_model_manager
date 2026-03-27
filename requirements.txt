@@ -1,0 +1,22 @@
+# Ollama Manager Pro — Python dependencies
+# Install with: pip install -r requirements.txt
+#
+# Minimum Python version: 3.11
+# Tested with Python 3.11 and 3.12 on Windows, macOS, and Linux.
+
+# ── Core UI framework ─────────────────────────────────────────────────────
+# PyQt6 provides the full Qt6 widget toolkit.
+# PyQt6-Qt6 and PyQt6-sip are pulled in automatically as dependencies.
+PyQt6>=6.5.0
+
+# ── HTTP client ───────────────────────────────────────────────────────────
+# Used for all Ollama REST API calls and registry fetching from ollama.com.
+requests>=2.28.0
+
+# ── System resource monitoring (optional but recommended) ─────────────────
+# Required for CPU% and RAM gauges in the Monitor tab.
+# If not installed the gauge cards display "n/a (install psutil)" rather
+# than crashing — the rest of the application works normally without it.
+# GPU VRAM metrics are sourced from nvidia-smi / rocm-smi subprocess calls
+# and do not require psutil.
+psutil>=5.9.0
