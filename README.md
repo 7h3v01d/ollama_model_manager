@@ -142,8 +142,26 @@ GPU monitoring is tested on Windows with NVIDIA GPUs. ROCm support (AMD) is impl
 
 ---
 
-## Licence
+### Contribution Policy
 
-MIT — see `LICENCE` for details.
+Feedback, bug reports, and suggestions are welcome.
 
-Built by Leon under the **KeystoneAI** brand.
+You may submit:
+
+- Issues
+- Design feedback
+- Pull requests for review
+
+However:
+
+- Contributions do not grant any license or ownership rights
+- The author retains full discretion over acceptance and future use
+- Contributors receive no rights to reuse, redistribute, or derive from this code
+
+---
+
+### License
+This project is not open-source.
+
+It is licensed under a private evaluation-only license.
+See LICENSE.txt for full terms.
