@@ -3,6 +3,8 @@
 A commercial-grade desktop application for managing local Ollama LLM models. Built with PyQt6, it provides a professional dark UI with eight specialised tabs covering the full local-model lifecycle — from discovery and installation through benchmarking, monitoring, and custom model creation.
 
 ---
+<img width="1256" height="739" alt="Screenshot" src="https://github.com/user-attachments/assets/b3088464-c091-47c3-9edb-20cbc648c716" />
+
 
 ## Features
 
