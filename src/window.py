@@ -52,6 +52,7 @@ class MainWindow(
         self._pull_thread:  QThread | None = None
 
         self._registry_cache: list[dict] = []
+        self._reg_worker = None
         self._bench_worker  = None
         self._bench_thread  = None
         self._monitor_timer:  QTimer | None = None

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Iterable
 
 import requests
+from logger import log
 from PyQt6.QtCore import (
     Qt, QAbstractTableModel, QModelIndex, QObject, QThread,
     pyqtSignal, QTimer, QSize,
@@ -132,92 +133,170 @@ class OllamaClient:
 
     def fetch_registry_models(self) -> list[dict]:
         """
-        Fetch models from ollama.com using a clean requests.Session.
-        Uses the same JSON search API the Ollama CLI calls.
+        Fetch model list from ollama.com.
 
-        Key fixes vs previous version:
-        - Uses a fresh session with NO Content-Type header (GET requests
-          must not send Content-Type; it breaks CDN caching and some proxies)
-        - Tries both "p" and "page" param names (Ollama has used both)
-        - Hard cap of 20 pages to prevent infinite loops
-        - Accepts any batch size < requested as end-of-results signal
-        - Falls back to a single-page fetch if pagination fails
+        Strategy (tried in order until one yields results):
+          1. GET /search?q=&p=N  with Accept: application/json
+             — the JSON API the Ollama CLI uses
+          2. GET /library HTML page  — scrape the Next.js __NEXT_DATA__
+             embedded JSON payload (server-side rendered, always present)
+          3. Last-resort regex scrape of href="/library/slug" links
+
+        All responses and parsing steps are logged so failures are visible
+        in the console and in ollama_manager.log.
         """
-        _session = requests.Session()
-        _session.headers.update({
-            "Accept": "application/json",
-            "User-Agent": "Mozilla/5.0 (compatible; OllamaManagerPro/4.0)",
-        })
-        models: list[dict] = []
-        seen_slugs: set = set()
-        MAX_PAGES = 20
-        PER_PAGE = 50   # conservative — less likely to hit timeouts
+        from logger import log
 
-        def _normalise(m: dict) -> dict | None:
-            slug = (m.get("name") or "").strip()
-            if not slug or slug in seen_slugs:
+        _s = requests.Session()
+        _s.headers.update({
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/122.0.0.0 Safari/537.36",
+        })
+
+        models: list[dict] = []
+        seen: set = set()
+
+        def _norm(m: dict) -> dict | None:
+            slug = (m.get("name") or m.get("model_name") or "").strip()
+            if not slug or slug in seen:
                 return None
-            seen_slugs.add(slug)
-            pulls_raw = m.get("pulls", 0) or 0
+            seen.add(slug)
+            pulls_raw = m.get("pulls", 0) or m.get("download_count", 0) or 0
             if isinstance(pulls_raw, (int, float)):
                 if pulls_raw >= 1_000_000:
-                    pulls = f"{pulls_raw / 1_000_000:.1f}M"
+                    pulls = f"{pulls_raw/1_000_000:.1f}M"
                 elif pulls_raw >= 1_000:
-                    pulls = f"{pulls_raw / 1_000:.0f}K"
+                    pulls = f"{pulls_raw/1_000:.0f}K"
                 else:
                     pulls = str(int(pulls_raw))
             else:
                 pulls = str(pulls_raw)
             return {
                 "slug": slug,
-                "name": m.get("title") or slug,
-                "description": (m.get("description") or "").strip(),
+                "name": m.get("title") or m.get("display_name") or slug,
+                "description": (m.get("description") or m.get("summary") or "").strip()[:200],
                 "pulls": pulls,
-                "tags": str(m.get("tags", "")),
-                "updated": m.get("updated_at", ""),
+                "tags": str(m.get("tags") or m.get("tag_count") or ""),
+                "updated": str(m.get("updated_at") or m.get("last_updated") or ""),
             }
 
-        for page in range(1, MAX_PAGES + 1):
-            try:
-                r = _session.get(
-                    "https://ollama.com/search",
-                    params={"q": "", "p": page, "per_page": PER_PAGE},
-                    timeout=15,
-                )
-                r.raise_for_status()
-                data = r.json()
-            except Exception:
-                # Try alternate param name on first page failure
-                if page == 1:
-                    try:
-                        r = _session.get(
-                            "https://ollama.com/search",
-                            params={"q": "", "page": page, "per_page": PER_PAGE},
-                            timeout=15,
-                        )
-                        r.raise_for_status()
-                        data = r.json()
-                    except Exception:
+        # ── Strategy 1: JSON search API ──────────────────────────────────
+        log.info("registry: trying JSON search API")
+        for page in range(1, 21):
+            fetched = False
+            for params in [
+                {"q": "", "p": page, "per_page": 50},
+                {"q": "", "page": page, "per_page": 50},
+                {"q": "", "p": page, "limit": 50},
+            ]:
+                try:
+                    r = _s.get("https://ollama.com/search", params=params, timeout=15)
+                    log.info("registry API: GET /search %s -> %d %s",
+                             params, r.status_code, r.headers.get("content-type",""))
+                    log.debug("registry API: body[:400]=%s", r.text[:400])
+                    if r.status_code != 200:
+                        continue
+                    ct = r.headers.get("content-type", "")
+                    if "json" not in ct:
+                        log.warning("registry API: non-JSON content-type: %s — body: %s",
+                                    ct, r.text[:300])
+                        continue
+                    data = r.json()
+                    log.info("registry API: JSON keys=%s",
+                             list(data.keys()) if isinstance(data, dict) else f"list[{len(data)}]")
+                    if isinstance(data, list):
+                        batch = data
+                    elif isinstance(data, dict):
+                        batch = (data.get("models") or data.get("results")
+                                 or data.get("items") or data.get("data") or [])
+                        log.info("registry API: batch from dict, len=%d", len(batch))
+                    else:
+                        continue
+                    if not batch:
+                        log.info("registry API: empty batch on page %d", page)
                         break
-                else:
-                    break
-
-            # Accept any top-level list or dict with a "models" key
-            if isinstance(data, list):
-                batch = data
-            else:
-                batch = data.get("models") or data.get("results") or []
-
-            for m in batch:
-                entry = _normalise(m)
-                if entry:
-                    models.append(entry)
-
-            # Stop when we get fewer results than requested (last page)
-            if len(batch) < PER_PAGE:
+                    for m in batch:
+                        e = _norm(m)
+                        if e:
+                            models.append(e)
+                    log.info("registry API: page %d gave %d, total=%d",
+                             page, len(batch), len(models))
+                    fetched = True
+                    if len(batch) < 50:
+                        log.info("registry API: last page")
+                        break
+                    break  # this URL worked, move to next page
+                except Exception as ex:
+                    log.warning("registry API: %s failed: %s", params, ex)
+            if not fetched or (fetched and page == 1 and not models):
                 break
+            if fetched and len(models) % 50 != 0:
+                break  # last page
 
+        if models:
+            log.info("registry: JSON API succeeded — %d models", len(models))
+            return models
+
+        # ── Strategy 2: HTML __NEXT_DATA__ scrape ────────────────────────
+        log.info("registry: JSON API gave 0 models, trying HTML scrape")
+        try:
+            _s.headers.update({"Accept": "text/html,application/xhtml+xml"})
+            r = _s.get("https://ollama.com/library", timeout=20)
+            log.info("registry HTML: status=%d  content-type=%s  len=%d",
+                     r.status_code, r.headers.get("content-type",""), len(r.text))
+            log.debug("registry HTML: body[:600]=%s", r.text[:600])
+
+            # Try __NEXT_DATA__
+            m = re.search(
+                r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>',
+                r.text, re.DOTALL
+            )
+            if m:
+                ndata = json.loads(m.group(1))
+                log.info("registry HTML: __NEXT_DATA__ found, top keys=%s",
+                         list(ndata.keys()))
+                # Walk the props tree looking for a model list
+                props = ndata.get("props", {}).get("pageProps", {})
+                log.info("registry HTML: pageProps keys=%s", list(props.keys()))
+                for key, val in props.items():
+                    if isinstance(val, list) and val and isinstance(val[0], dict):
+                        if any(k in val[0] for k in ("name","slug","model_name","title")):
+                            log.info("registry HTML: found model list under key=%s len=%d", key, len(val))
+                            for item in val:
+                                e = _norm(item)
+                                if e:
+                                    models.append(e)
+                            break
+                if models:
+                    log.info("registry: __NEXT_DATA__ scrape succeeded — %d models", len(models))
+                    return models
+                log.warning("registry HTML: __NEXT_DATA__ found but no model list in pageProps")
+            else:
+                log.warning("registry HTML: no __NEXT_DATA__ script tag found")
+
+            # Try regex href scrape as last resort
+            log.info("registry: trying href regex scrape")
+            slugs = list(dict.fromkeys(re.findall(r'href="/library/([a-z0-9_-]+)"', r.text)))
+            log.info("registry href scrape: found %d slugs: %s", len(slugs), slugs[:10])
+            for slug in slugs:
+                if slug not in seen:
+                    seen.add(slug)
+                    models.append({
+                        "slug": slug, "name": slug,
+                        "description": "", "pulls": "", "tags": "", "updated": "",
+                    })
+            if models:
+                log.info("registry: href scrape gave %d models", len(models))
+                return models
+
+        except Exception as ex:
+            log.exception("registry HTML scrape failed: %s", ex)
+
+        log.error("registry: all strategies exhausted — 0 models returned")
         return models
+
 
     def fetch_model_tags(self, slug: str) -> list[dict]:
         """

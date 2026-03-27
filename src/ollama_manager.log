@@ -56,3 +56,159 @@ NameError: name 'normalize_model_name' is not defined
 12:24:27  INFO      workers:367  —  DiskAnalysisWorker.run: emitting finished signal
 12:24:27  INFO      workers:369  —  DiskAnalysisWorker.run: finished signal emitted OK
 12:24:27  INFO      tab_disk:132  —  _disk_on_result: received result  type=dict  keys=['per_model', 'orphan_blobs', 'total_size', 'blobs_dir_size', 'manifests_dir_size', 'models_dir']
+17:42:41  INFO      logger:46  —  ============================================================
+17:42:41  INFO      logger:47  —  Ollama Manager Pro — session started 2026-03-27 17:42:41
+17:42:41  INFO      logger:49  —  Log file: G:\Projects\Ollama Projects\ollama_manager_pro\src\ollama_manager.log
+18:05:24  INFO      logger:46  —  ============================================================
+18:05:24  INFO      logger:47  —  Ollama Manager Pro — session started 2026-03-27 18:05:24
+18:05:24  INFO      logger:49  —  Log file: G:\Projects\Ollama Projects\ollama_manager_pro\src\ollama_manager.log
+18:05:34  INFO      tab_registry:93  —  _reg_fetch: launching RegistryFetchWorker
+18:05:34  INFO      workers:216  —  RegistryFetchWorker.run: start  fetch_tags_for=''
+18:05:34  INFO      client:186  —  registry: trying JSON search API
+18:05:36  INFO      client:196  —  registry API: GET /search {'q': '', 'p': 1, 'per_page': 50} -> 200 text/html; charset=utf-8
+18:05:36  DEBUG     client:198  —  registry API: body[:400]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="Ollama" />
+    <meta property="og:description" content="Search for models on Ollama." 
+18:05:36  WARNING   client:203  —  registry API: non-JSON content-type: text/html; charset=utf-8 — body: 
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:ti
+18:05:36  INFO      client:196  —  registry API: GET /search {'q': '', 'page': 1, 'per_page': 50} -> 200 text/html; charset=utf-8
+18:05:36  DEBUG     client:198  —  registry API: body[:400]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="Ollama" />
+    <meta property="og:description" content="Search for models on Ollama." 
+18:05:36  WARNING   client:203  —  registry API: non-JSON content-type: text/html; charset=utf-8 — body: 
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:ti
+18:05:37  INFO      client:196  —  registry API: GET /search {'q': '', 'p': 1, 'limit': 50} -> 200 text/html; charset=utf-8
+18:05:37  DEBUG     client:198  —  registry API: body[:400]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="Ollama" />
+    <meta property="og:description" content="Search for models on Ollama." 
+18:05:37  WARNING   client:203  —  registry API: non-JSON content-type: text/html; charset=utf-8 — body: 
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>Ollama</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Search for models on Ollama."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:ti
+18:05:37  INFO      client:243  —  registry: JSON API gave 0 models, trying HTML scrape
+18:05:39  INFO      client:247  —  registry HTML: status=200  content-type=text/html; charset=utf-8  len=761867
+18:05:39  DEBUG     client:249  —  registry HTML: body[:600]=
+
+
+
+
+
+
+
+
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+  <head>
+    <title>library</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Browse Ollama's library of models."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="library" />
+    <meta property="og:description" content="Browse Ollama's library of models." />
+    <meta property="og:url" content="https://ollama.com/library" />
+    <meta property="og:image" content="https://ollama.com/public/og.png" />
+    <meta property="og:image:type" cont
+18:05:39  WARNING   client:277  —  registry HTML: no __NEXT_DATA__ script tag found
+18:05:39  INFO      client:280  —  registry: trying href regex scrape
+18:05:39  INFO      client:282  —  registry href scrape: found 187 slugs: ['deepseek-r1', 'nomic-embed-text', 'gemma3', 'mistral', 'qwen3', 'llama3', 'gemma2', 'phi3', 'llava', 'mxbai-embed-large']
+18:05:39  INFO      client:291  —  registry: href scrape gave 187 models
+18:05:39  INFO      workers:230  —  RegistryFetchWorker: fetch_registry_models returned 187 models
+18:05:54  INFO      workers:216  —  RegistryFetchWorker.run: start  fetch_tags_for='wizard-vicuna'
+18:05:55  INFO      workers:221  —  RegistryFetchWorker: tags fetched for wizard-vicuna — 17 tags
+18:06:32  INFO      workers:216  —  RegistryFetchWorker.run: start  fetch_tags_for='llama3'
+18:06:34  INFO      workers:221  —  RegistryFetchWorker: tags fetched for llama3 — 40 tags

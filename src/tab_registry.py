@@ -86,13 +86,18 @@ class RegistryMixin:
 
 
     def _reg_fetch(self):
+        from logger import log
         self.reg_refresh_btn.setEnabled(False)
         self.reg_status_lbl.setText("Fetching from ollama.com…")
         self._set_status("Fetching model registry…")
+        log.info("_reg_fetch: launching RegistryFetchWorker")
 
         worker = RegistryFetchWorker(self.client)
         worker.finished.connect(self._reg_on_data)
         worker.failed.connect(self._reg_on_fail)
+        self._reg_worker = worker  # strong ref — prevent GC before thread starts
+        worker.finished.connect(lambda _: setattr(self, "_reg_worker", None))
+        worker.failed.connect(lambda _: setattr(self, "_reg_worker", None))
         self._start_worker(worker)
 
 

@@ -212,27 +212,32 @@ class RegistryFetchWorker(Worker):
 
     @pyqtSlot()
     def run(self):
+        from logger import log
+        log.info("RegistryFetchWorker.run: start  fetch_tags_for=%r", self.fetch_tags_for)
         try:
             if self.fetch_tags_for:
-                # Tags-only fetch — don't re-fetch the full model list
                 try:
                     tags = self.client.fetch_model_tags(self.fetch_tags_for)
+                    log.info("RegistryFetchWorker: tags fetched for %s — %d tags",
+                             self.fetch_tags_for, len(tags))
                     self.tags_ready.emit(self.fetch_tags_for, tags)
                 except Exception as e:
+                    log.exception("RegistryFetchWorker: tags fetch failed: %s", e)
                     self.tags_ready.emit(self.fetch_tags_for, [])
                 self.finished.emit([])
             else:
                 models = self.client.fetch_registry_models()
+                log.info("RegistryFetchWorker: fetch_registry_models returned %d models", len(models))
                 if not models:
-                    # Emit a non-fatal signal so the UI doesn't hang
                     self.failed.emit(
-                        "Registry returned 0 models. "
-                        "The ollama.com API may have changed, or your network "
-                        "is blocking the request. Check your internet connection."
+                        "Registry returned 0 models.\n\n"
+                        "Check the log (ollama_manager.log) for the full "
+                        "HTTP response — it will show exactly what ollama.com returned."
                     )
                     return
                 self.finished.emit(models)
         except Exception as e:
+            log.exception("RegistryFetchWorker.run: unhandled exception: %s", e)
             self.failed.emit(str(e))
 
 
