@@ -1,4 +1,4 @@
-# Ollama Manager Pro
+# KeystoneAI Ollama Manager Pro
 
 A commercial-grade desktop application for managing local Ollama LLM models. Built with PyQt6, it provides a professional dark UI with eight specialised tabs covering the full local-model lifecycle — from discovery and installation through benchmarking, monitoring, and custom model creation.
 
