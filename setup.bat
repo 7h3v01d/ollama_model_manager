@@ -18,7 +18,7 @@ rem  Companion scripts are NOT overwritten if they already exist.
 rem  Add them to .gitignore to keep your repo tidy.
 rem ============================================================
 
-set "PROJECT_NAME=Keystone_ollama_manager_pro"
+set "PROJECT_NAME=ollama_manager_pro"
 set "VENV_DIR=.venv"
 
 title "%PROJECT_NAME% - SETUP"
