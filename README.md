@@ -1,4 +1,4 @@
-# KeystoneAI Ollama Manager Pro
+# Ollama Manager Pro
 
 A commercial-grade desktop application for managing local Ollama LLM models. Built with PyQt6, it provides a professional dark UI with eight specialised tabs covering the full local-model lifecycle — from discovery and installation through benchmarking, monitoring, and custom model creation.
 
@@ -53,7 +53,7 @@ GPU monitoring requires `nvidia-smi` (NVIDIA) or `rocm-smi` (AMD) to be on the s
 
 ```bash
 # 1. Clone or extract the project
-git clone https://github.com/keystoneai/ollama-manager-pro.git
+git clone https://github.com/7h3v01d/ollama_model_manager
 cd ollama-manager-pro
 
 # 2. Create a virtual environment
