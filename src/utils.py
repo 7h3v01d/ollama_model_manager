@@ -36,7 +36,7 @@ from PyQt6.QtWidgets import (
 #  UTILITIES
 # ─────────────────────────────────────────────
 
-DEFAULT_BASE_URL = "http://localhost:11434"
+DEFAULT_BASE_URL = "http://192.168.0.163:11434"
 
 
 def human_bytes(n: int | None) -> str:
@@ -192,7 +192,7 @@ def get_system_stats() -> dict:
 @dataclass
 class ServerEntry:
     name:    str          # display label e.g. "Local", "Remote GPU"
-    url:     str          # e.g. "http://localhost:11434"
+    url:     str          # e.g. "http://192.168.0.163:11434"
     notes:   str = ""
     active:  bool = False # which one is the current active server
 
@@ -213,8 +213,8 @@ class ServerEntry:
 class ServerRegistry:
     """
     Persists a list of Ollama server entries to a JSON file.
-    Storage: %APPDATA%/KeystoneAI/ollama_manager_servers.json  (Windows)
-             ~/.config/KeystoneAI/ollama_manager_servers.json   (Linux/Mac)
+    Storage: %APPDATA%/7h3v01d/ollama_manager_servers.json  (Windows)
+             ~/.config/7h3v01d/ollama_manager_servers.json   (Linux/Mac)
     """
 
     def __init__(self):
@@ -229,7 +229,7 @@ class ServerRegistry:
             base = Path(os.environ.get("APPDATA", Path.home()))
         else:
             base = Path.home() / ".config"
-        p = base / "KeystoneAI"
+        p = base / "7h3v01d"
         p.mkdir(parents=True, exist_ok=True)
         return p / "ollama_manager_servers.json"
 

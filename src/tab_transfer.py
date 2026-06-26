@@ -251,7 +251,13 @@ class TransferMixin:
             self._err("Directory Not Found", f"Models directory does not exist:\n\n{models_dir}")
             return
 
-        suggested = self._default_zip_name("ollama_selected_backup")
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if len(names) == 1:
+            # Sanitise model name: "llama3.2:8b-q4_K_M" → "llama3.2_8b-q4_K_M"
+            safe = names[0].replace(":", "_").replace("/", "_").replace(" ", "_")
+            suggested = str((Path.home() / f"{safe}_{ts}.zip").resolve())
+        else:
+            suggested = self._default_zip_name("ollama_selected_backup")
         out, _ = QFileDialog.getSaveFileName(self, "Save Backup ZIP", suggested, "Zip archives (*.zip)")
         if not out:
             return

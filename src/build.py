@@ -105,7 +105,7 @@ def build(onefile: bool, debug: bool):
         else:
             print(f"\n✓ Build complete. Check {DIST}/")
 
-    print("\nData files (stored in %APPDATA%/KeystoneAI/ at runtime):")
+    print("\nData files (stored in %APPDATA%/7h3v01d/ at runtime):")
     print("  ollama_manager_servers.json  — saved server list")
     print("  prompt_library.db            — prompt library SQLite database")
     print("\nLog file written next to the .exe:")

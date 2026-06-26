@@ -56,7 +56,7 @@ class InstalledModelsTableModel(QAbstractTableModel):
 
     def set_rows(self, rows: list[InstalledModelRow]):
         self.beginResetModel()
-        self._rows = rows
+        self._rows = sorted(rows, key=lambda r: r.name.lower())
         self._apply_filter_locked()
         self.endResetModel()
 

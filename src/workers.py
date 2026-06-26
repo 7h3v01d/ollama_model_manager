@@ -444,13 +444,16 @@ class BenchResult:
 class BenchmarkWorker(Worker):
     result_update = pyqtSignal(int, object)   # index, BenchResult
 
-    def __init__(self, client: OllamaClient, runs: list[tuple[int, str, str]]):
+    def __init__(self, client: OllamaClient, runs: list[tuple[int, str, str]],
+                 gpu_index: int | None = None):
         """
-        runs: list of (index, model_name, prompt)
+        runs:      list of (index, model_name, prompt)
+        gpu_index: 0-based CUDA/HIP device index, or None for Ollama default
         """
         super().__init__()
         self.client = client
         self.runs = runs
+        self.gpu_index = gpu_index
         self._stop = False
 
     def stop(self):
@@ -469,7 +472,8 @@ class BenchmarkWorker(Worker):
                 first_token_t = None
                 output_parts = []
                 last_obj = {}
-                for obj in self.client.generate_stream(model, prompt):
+                for obj in self.client.generate_stream(
+                        model, prompt, gpu_index=self.gpu_index):
                     if self._stop:
                         break
                     tok = obj.get("response", "")

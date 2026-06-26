@@ -17,7 +17,7 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Ollama Manager Pro")
     app.setApplicationVersion("4.0.0")
-    app.setOrganizationName("KeystoneAI")
+    app.setOrganizationName("7h3v01d")
 
     try:
         app.setStyle("Fusion")

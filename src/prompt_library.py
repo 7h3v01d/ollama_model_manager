@@ -1,8 +1,8 @@
 """
 prompt_library.py — SQLite-backed prompt and system-prompt library.
 
-Storage: %APPDATA%/KeystoneAI/prompt_library.db  (Windows)
-         ~/.config/KeystoneAI/prompt_library.db   (Linux/Mac)
+Storage: %APPDATA%/7h3v01d/prompt_library.db  (Windows)
+         ~/.config/7h3v01d/prompt_library.db   (Linux/Mac)
 
 Schema
 ------
@@ -100,7 +100,7 @@ class PromptLibrary:
             base = Path(os.environ.get("APPDATA", Path.home()))
         else:
             base = Path.home() / ".config"
-        p = base / "KeystoneAI"
+        p = base / "7h3v01d"
         p.mkdir(parents=True, exist_ok=True)
         return p / "prompt_library.db"
 

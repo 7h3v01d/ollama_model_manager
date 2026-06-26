@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
 )
 
 from theme import STYLESHEET
+from logger import log
 from utils import human_bytes, parse_time, default_models_dir_guess, ServerRegistry
 from client import OllamaClient
 # DEFAULT_BASE_URL now sourced via ServerRegistry
@@ -36,12 +37,15 @@ from tab_servers   import ServersMixin
 from tab_prompts   import PromptsMixin, PromptPickerDialog
 from tab_batch     import BatchMixin
 from prompt_library import PromptLibrary
+from migrate_settings import migrate_keystone_to_7h3v01d
+from tab_settings  import SettingsMixin
+from app_settings  import AppSettings
 
 
 class MainWindow(
     TransferMixin, RegistryMixin, BenchmarkMixin,
     MonitorMixin, ModelfileMixin, DiskMixin, ChatMixin,
-    AboutMixin, ServersMixin, PromptsMixin, BatchMixin,
+    AboutMixin, ServersMixin, PromptsMixin, BatchMixin, SettingsMixin,
     QMainWindow,
 ):
     def __init__(self):
@@ -50,6 +54,12 @@ class MainWindow(
         self.resize(1280, 820)
         self.setMinimumSize(960, 640)
 
+        # Migrate legacy KeystoneAI settings to 7h3v01d on first run
+        _migrated = migrate_keystone_to_7h3v01d()
+        if _migrated:
+            log.info("Settings migrated from KeystoneAI: %s", _migrated)
+
+        self._settings = AppSettings()
         self._server_registry  = ServerRegistry()
         self._prompt_library   = PromptLibrary()
         self.client           = OllamaClient(self._server_registry.active().url)
@@ -99,6 +109,7 @@ class MainWindow(
         self.tabs.addTab(self._tab_monitor(),   "  Monitor  ")
         self.tabs.addTab(self._tab_modelfile(), "  Modelfile  ")
         self.tabs.addTab(self._tab_disk(),      "  Disk  ")
+        self.tabs.addTab(self._tab_settings(),  "  ⚙ Settings  ")
         self.tabs.addTab(self._tab_about(),     "  About  ")
 
         self._status_bar = QStatusBar()
@@ -142,6 +153,7 @@ class MainWindow(
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
+        # ── Row 1: stat cards + Refresh ──────────────────────────────
         stats_row = QHBoxLayout()
         self.stat_total      = StatCard("Total")
         self.stat_total_size = StatCard("Total Size")
@@ -152,6 +164,25 @@ class MainWindow(
         self.btn_refresh_installed = QPushButton("↻  Refresh")
         self.btn_refresh_installed.setMinimumWidth(100)
         self.btn_refresh_installed.clicked.connect(self.refresh_installed)
+        stats_row.addWidget(self.btn_refresh_installed)
+        layout.addLayout(stats_row)
+
+        # ── Row 2: selection-dependent action buttons ─────────────────
+        action_row = QHBoxLayout()
+        action_row.setSpacing(8)
+
+        self.btn_export_selected = QPushButton("⬆  Export Selected…")
+        self.btn_export_selected.setObjectName("btn_primary")
+        self.btn_export_selected.setEnabled(False)
+        self.btn_export_selected.setToolTip(
+            "Backup selected models to a ZIP file (blobs + manifests)")
+        self.btn_export_selected.clicked.connect(self.export_selected_zip)
+
+        self.btn_copy_selected = QPushButton("⎘  Copy to Server…")
+        self.btn_copy_selected.setEnabled(False)
+        self.btn_copy_selected.setToolTip(
+            "Copy selected models to another Ollama server via /api/copy")
+        self.btn_copy_selected.clicked.connect(self._installed_copy_to_server)
 
         self.btn_delete_installed = QPushButton("✕  Delete Selected")
         self.btn_delete_installed.setObjectName("btn_danger")
@@ -162,11 +193,11 @@ class MainWindow(
         self.btn_delete_filtered.setObjectName("btn_danger")
         self.btn_delete_filtered.clicked.connect(self.delete_all_filtered_installed)
 
-        for btn in (self.btn_refresh_installed,
-                    self.btn_delete_installed,
-                    self.btn_delete_filtered):
-            stats_row.addWidget(btn)
-        layout.addLayout(stats_row)
+        for btn in (self.btn_export_selected, self.btn_copy_selected,
+                    self.btn_delete_installed, self.btn_delete_filtered):
+            action_row.addWidget(btn)
+        action_row.addStretch(1)
+        layout.addLayout(action_row)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setHandleWidth(1)
@@ -312,6 +343,8 @@ class MainWindow(
 
     def refresh_installed(self):
         self.btn_delete_installed.setEnabled(False)
+        self.btn_export_selected.setEnabled(False)
+        self.btn_copy_selected.setEnabled(False)
         self.detail_panel.clear()
         self._set_status("Fetching installed models…")
         worker = Worker()
@@ -369,7 +402,10 @@ class MainWindow(
 
     def on_installed_selected(self, _index: QModelIndex):
         names = self.installed_selected_names()
-        self.btn_delete_installed.setEnabled(bool(names))
+        has_sel = bool(names)
+        self.btn_delete_installed.setEnabled(has_sel)
+        self.btn_export_selected.setEnabled(has_sel)
+        self.btn_copy_selected.setEnabled(has_sel)
         if len(names) == 1:
             row = next(
                 (r for r in self.installed_model.rows() if r.name == names[0]),
@@ -395,6 +431,73 @@ class MainWindow(
         worker.finished.connect(
             lambda detail: self.detail_panel.show_data(row, detail))
         self._start_worker(worker)
+
+    def _installed_copy_to_server(self):
+        """Copy selected models to another Ollama server via /api/copy."""
+        import requests as _req
+        from PyQt6.QtWidgets import QInputDialog, QMessageBox
+
+        names = self.installed_selected_names()
+        if not names:
+            return
+
+        # Build server choice list
+        servers = self._server_registry.list()
+        active_url = self._server_registry.active().url
+        other_servers = [s for s in servers if s.url != active_url]
+        choices = [f"{s.label}  ({s.url})" for s in other_servers]
+        choices.append("Enter URL manually...")
+
+        if len(choices) == 1:
+            dest_url, ok = QInputDialog.getText(
+                self, "Copy to Server",
+                "Destination Ollama URL (e.g. http://192.168.0.100:11434):",
+                text="http://")
+            if not ok or not dest_url.strip():
+                return
+            dest_url = dest_url.strip().rstrip("/")
+        else:
+            choice, ok = QInputDialog.getItem(
+                self, "Copy to Server",
+                f"Copy {len(names)} model(s) to:", choices, 0, False)
+            if not ok:
+                return
+            if choice == "Enter URL manually...":
+                dest_url, ok2 = QInputDialog.getText(
+                    self, "Copy to Server",
+                    "Destination Ollama URL:", text="http://")
+                if not ok2 or not dest_url.strip():
+                    return
+                dest_url = dest_url.strip().rstrip("/")
+            else:
+                dest_url = choice.split("(")[-1].rstrip(")")
+
+        reply = QMessageBox.question(
+            self, "Confirm Copy",
+            f"Copy {len(names)} model(s) to:\n{dest_url}\n\n"
+            + "\n".join(f"  * {n}" for n in names),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        errors = []
+        for name in names:
+            try:
+                r = _req.post(
+                    f"{dest_url}/api/copy",
+                    json={"source": name, "destination": name},
+                    timeout=60)
+                if r.status_code not in (200, 201):
+                    errors.append(f"{name}: HTTP {r.status_code}")
+            except Exception as e:
+                errors.append(f"{name}: {e}")
+
+        if errors:
+            self._err("Copy Errors",
+                      f"{len(names)-len(errors)}/{len(names)} succeeded.\n\n"
+                      + "\n".join(errors))
+        else:
+            self._set_status(f"Copied {len(names)} model(s) to {dest_url}")
 
     def delete_installed_selected(self):
         names = self.installed_selected_names()

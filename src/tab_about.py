@@ -18,7 +18,7 @@ from widgets import Separator, SectionLabel
 
 APP_VERSION  = "4.0.0"
 APP_NAME     = "Ollama Manager Pro"
-ORGANIZATION = "KeystoneAI"
+ORGANIZATION = "7h3v01d"
 AUTHOR       = "Leon"
 
 

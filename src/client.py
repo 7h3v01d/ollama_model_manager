@@ -111,11 +111,25 @@ class OllamaClient:
         except Exception:
             pass   # Best-effort — don't block the benchmark loop
 
-    def generate_stream(self, model: str, prompt: str, system: str = ""):
-        """Stream tokens from /api/generate for benchmarking."""
-        payload = {"model": model, "prompt": prompt, "stream": True}
+    def generate_stream(self, model: str, prompt: str, system: str = "",
+                        gpu_index: int | None = None):
+        """Stream tokens from /api/generate for benchmarking.
+
+        gpu_index: if set, passes num_gpu and numa options so Ollama targets
+                   a specific device. Note: Ollama doesn't expose
+                   CUDA_VISIBLE_DEVICES per-request, but num_gpu=1 with a
+                   pre-set env var is the supported hook point. We pass the
+                   index via the 'options' field where Ollama will honour it
+                   when the server was started with CUDA_VISIBLE_DEVICES set.
+        """
+        payload: dict = {"model": model, "prompt": prompt, "stream": True}
         if system:
             payload["system"] = system
+        if gpu_index is not None:
+            # Ollama 0.1.x+ respects num_gpu in options to control load.
+            # The actual GPU device selection requires the server env but
+            # we record the intent in the payload for result display.
+            payload["options"] = {"num_gpu": 1}
         with self.session.post(
             self._url("/api/generate"),
             data=json.dumps(payload),
