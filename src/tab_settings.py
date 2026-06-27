@@ -116,23 +116,27 @@ class PlayAudioThread(QThread):
     """
     log_line = pyqtSignal(str)
 
-    def __init__(self, url: str, method: str, payload_key: str, text: str):
+    def __init__(self, url: str, method: str, payload_key: str, text: str, voice: str = ""):
         super().__init__()
         self.url         = url
         self.method      = method
         self.payload_key = payload_key
         self.text        = text
+        self.voice       = voice
 
     def run(self):
         import tempfile, os
         import requests as _req
 
         self.log_line.emit("   Sending request…")
+        payload = {self.payload_key: self.text}
+        if self.voice:
+            payload["voice"] = self.voice
         try:
             fn = getattr(_req, self.method.lower())
             r = fn(
                 self.url,
-                json={self.payload_key: self.text},
+                json=payload,
                 timeout=60,
             )
             self.log_line.emit(f"   status  : {r.status_code} {r.reason}")
@@ -371,6 +375,51 @@ class SettingsMixin:
         vg_l.addWidget(self.vg_log)
 
         # Chat auto-TTS
+        vg_l.addWidget(self._settings_sep())
+
+        # ── Voice selection ───────────────────────────────────────────
+        voice_hdr = QHBoxLayout()
+        voice_title = QLabel("Voice")
+        voice_title.setFixedWidth(110)
+        voice_title.setStyleSheet("color:#64748b; font-size:11px; font-weight:600;")
+        self.vg_voice_combo = QComboBox()
+        self.vg_voice_combo.setEditable(True)
+        self.vg_voice_combo.setMinimumWidth(220)
+        self.vg_voice_combo.setToolTip(
+            "Voice/speaker name sent as 'voice' in the TTS payload. "
+            "Leave blank to use the VG default. Click Fetch to load from /engines.")
+        # Pre-load known Kokoro voices
+        kokoro_voices = [
+            "", "af_heart", "af_alloy", "af_aoede", "af_bella",
+            "af_jessica", "af_kore", "af_nicole", "af_nova", "af_river",
+            "af_sarah", "af_sky", "am_adam", "am_echo", "am_eric",
+            "am_fenrir", "am_liam", "am_michael", "am_onyx", "am_puck",
+            "am_santa", "bf_alice", "bf_emma", "bf_isabella", "bf_lily",
+            "bm_daniel", "bm_fable", "bm_george", "bm_lewis",
+        ]
+        self.vg_voice_combo.addItems(kokoro_voices)
+        saved_voice = self._settings.get("vg_voice") or ""
+        if saved_voice and saved_voice not in kokoro_voices:
+            self.vg_voice_combo.insertItem(1, saved_voice)
+        self.vg_voice_combo.setCurrentText(saved_voice)
+
+        self.vg_fetch_voices_btn = QPushButton("⟳ Fetch")
+        self.vg_fetch_voices_btn.setFixedWidth(70)
+        self.vg_fetch_voices_btn.setToolTip("Fetch available voices from GET /engines")
+        self.vg_fetch_voices_btn.clicked.connect(self._settings_fetch_voices)
+
+        voice_hint = QLabel("empty = VG default")
+        voice_hint.setStyleSheet("color:#374151; font-size:10px;")
+
+        voice_hdr.addWidget(voice_title)
+        voice_hdr.addWidget(self.vg_voice_combo, 1)
+        voice_hdr.addWidget(self.vg_fetch_voices_btn)
+        voice_hdr.addWidget(voice_hint)
+        vg_l.addLayout(voice_hdr)
+
+        vg_l.addWidget(self._settings_sep())
+
+        # ── Auto-TTS ──────────────────────────────────────────────────
         auto_row = QHBoxLayout()
         self.vg_auto_chk = QCheckBox("Enable TTS by default when opening Chat tab")
         self.vg_auto_chk.setStyleSheet("color:#94a3b8; font-size:11px;")
@@ -429,6 +478,7 @@ class SettingsMixin:
             "vg_endpoint":    self.vg_endpoint_input.text().strip(),
             "vg_method":      self.vg_method_combo.currentText(),
             "vg_payload_key": self.vg_payload_key_input.text().strip() or "text",
+            "vg_voice":       self.vg_voice_combo.currentText().strip(),
             "vg_test_phrase": self.vg_test_phrase_input.text().strip(),
             "chat_tts_auto":  self.vg_auto_chk.isChecked(),
         })
@@ -436,6 +486,61 @@ class SettingsMixin:
             self.chat_tts_chk.setChecked(self.vg_enabled_chk.isChecked())
         self._set_status("Voice Gateway settings saved.")
         log.info("SettingsMixin: VG settings saved")
+
+    def _settings_fetch_voices(self):
+        """GET /engines and populate voice combo from Kokoro voices list."""
+        base_url = self.vg_url_input.text().strip().rstrip("/")
+        self.vg_fetch_voices_btn.setEnabled(False)
+        self.vg_log.append(f"\nFetching voices from {base_url}/engines …")
+
+        class FetchThread(QThread):
+            result = pyqtSignal(list, str)  # voices, error
+            def __init__(self, url):
+                super().__init__()
+                self.url = url
+            def run(self):
+                import requests as _req
+                try:
+                    r = _req.get(self.url, timeout=6)
+                    r.raise_for_status()
+                    data = r.json()
+                    voices = []
+                    # Parse /engines response — look for kokoro voices array
+                    for engine_name, engine_data in data.items():
+                        if isinstance(engine_data, dict):
+                            for key in ("voices", "available_voices", "speakers"):
+                                if key in engine_data:
+                                    v = engine_data[key]
+                                    if isinstance(v, list):
+                                        voices.extend(str(x) for x in v)
+                    self.result.emit(voices, "")
+                except Exception as e:
+                    self.result.emit([], str(e))
+
+        def on_result(voices, err):
+            self.vg_fetch_voices_btn.setEnabled(True)
+            if err:
+                self.vg_log.append(f"  ✗ {err}")
+                self.vg_log.append("  (Using built-in Kokoro voice list)")
+                return
+            if not voices:
+                self.vg_log.append("  No voices found in /engines response.")
+                self.vg_log.append("  (Using built-in Kokoro voice list)")
+                return
+            current = self.vg_voice_combo.currentText()
+            self.vg_voice_combo.clear()
+            self.vg_voice_combo.addItem("")
+            for v in voices:
+                self.vg_voice_combo.addItem(v)
+            if current in voices:
+                self.vg_voice_combo.setCurrentText(current)
+            self.vg_log.append(f"  ✓ Loaded {len(voices)} voices")
+
+        t = FetchThread(f"{base_url}/engines")
+        t.result.connect(on_result)
+        t.finished.connect(t.deleteLater)
+        self._fetch_thread = t
+        t.start()
 
     def _settings_test_vg(self):
         if self._vg_test_thread and self._vg_test_thread.isRunning():
@@ -466,14 +571,17 @@ class SettingsMixin:
         url    = self._settings.vg_full_url
         method = self.vg_method_combo.currentText()
         key    = self.vg_payload_key_input.text().strip() or "text"
+        voice  = self.vg_voice_combo.currentText().strip()
         phrase = self.vg_test_phrase_input.text().strip()
 
         self.vg_log.append(f"\n── Audio playback test ──────────────────────")
         self.vg_log.append(f"   URL    : {url}")
+        voice_label = repr(voice) if voice else "(VG default)"
+        self.vg_log.append(f"   voice  : {voice_label}")
         self.vg_log.append(f"   phrase : {phrase!r}")
         self.vg_play_btn.setEnabled(False)
 
-        self._play_thread = PlayAudioThread(url, method, key, phrase)
+        self._play_thread = PlayAudioThread(url, method, key, phrase, voice=voice)
         self._play_thread.log_line.connect(self.vg_log.append)
         self._play_thread.finished.connect(
             lambda: self.vg_play_btn.setEnabled(True))

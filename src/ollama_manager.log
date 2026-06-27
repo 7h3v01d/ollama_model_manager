@@ -453,3 +453,14 @@
 15:13:33  INFO      workers:229  —  ChatWorker.run: model=qwen3.5:9b  messages=3
 15:13:56  INFO      tab_chat:603  —  ChatMixin: TTS started http://192.168.0.163:8050/tts (2579 chars)
 15:13:56  INFO      tab_chat:827  —  ChatMixin: finished  eval=1173  tps=65.6
+15:18:45  INFO      logger:52  —  ============================================================
+15:18:45  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 15:18:45
+15:18:45  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+15:18:47  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+15:19:18  INFO      tab_settings:488  —  SettingsMixin: VG settings saved
+15:19:29  INFO      tab_settings:488  —  SettingsMixin: VG settings saved
+15:19:37  INFO      tab_settings:488  —  SettingsMixin: VG settings saved
+15:19:46  INFO      tab_settings:488  —  SettingsMixin: VG settings saved
+15:19:54  INFO      tab_settings:488  —  SettingsMixin: VG settings saved
+15:20:03  INFO      tab_settings:488  —  SettingsMixin: VG settings saved
+15:20:10  INFO      tab_settings:488  —  SettingsMixin: VG settings saved

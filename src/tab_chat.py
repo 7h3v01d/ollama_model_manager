@@ -47,22 +47,27 @@ class TTSThread(QThread):
     """
     failed = pyqtSignal(str)
 
-    def __init__(self, text: str, url: str, method: str = "POST", payload_key: str = "text"):
+    def __init__(self, text: str, url: str, method: str = "POST",
+                 payload_key: str = "text", voice: str = ""):
         super().__init__()
         self.text        = text
         self.url         = url
         self.method      = method
         self.payload_key = payload_key
+        self.voice       = voice
 
     def run(self):
         import tempfile, os
         import requests as _req
         try:
             fn = getattr(_req, self.method.lower())
+            payload = {self.payload_key: self.text}
+            if self.voice:
+                payload["voice"] = self.voice
             r = fn(
                 self.url,
-                json={self.payload_key: self.text},
-                timeout=60,  # synthesis can take a few seconds for long replies
+                json=payload,
+                timeout=60,
             )
             if r.status_code >= 400:
                 self.failed.emit(f"TTS HTTP {r.status_code} {r.reason}")
@@ -590,11 +595,12 @@ class ChatMixin:
 
         method = self._settings.get("vg_method") or "POST"
         pk     = self._settings.get("vg_payload_key") or "text"
+        voice  = self._settings.get("vg_voice") or ""
 
         self._set_status(f"TTS synthesising...")
         self.chat_tts_chk.setText("🔊 TTS ⏳")
 
-        thread = TTSThread(text, url=url, method=method, payload_key=pk)
+        thread = TTSThread(text, url=url, method=method, payload_key=pk, voice=voice)
         thread.failed.connect(self._chat_tts_failed)
         thread.finished.connect(thread.deleteLater)
         thread.finished.connect(self._chat_tts_finished)

@@ -10,6 +10,7 @@ Keys (with defaults):
     vg_endpoint     str    "/tts"
     vg_method       str    "POST"
     vg_payload_key  str    "text"         # JSON key that holds the text
+    vg_voice        str    ""             # voice/speaker name (empty = VG default)
     vg_test_phrase  str    "Voice gateway test. Hello from Ollama Manager."
     chat_tts_auto   bool   False          # TTS on by default in Chat tab
 """
@@ -26,6 +27,7 @@ DEFAULTS: dict = {
     "vg_endpoint":    "/tts",
     "vg_method":      "POST",
     "vg_payload_key": "text",
+    "vg_voice":       "",
     "vg_test_phrase": "Voice gateway test. Hello from Ollama Manager.",
     "chat_tts_auto":  False,
 }
