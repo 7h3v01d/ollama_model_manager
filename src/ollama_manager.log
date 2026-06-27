@@ -362,3 +362,94 @@
 00:26:56  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 00:26:56
 00:26:56  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
 00:26:58  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+00:41:09  INFO      logger:52  —  ============================================================
+00:41:09  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 00:41:09
+00:41:09  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+00:41:10  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+00:41:31  INFO      tab_settings:310  —  SettingsMixin: VG settings saved
+00:41:41  INFO      tab_settings:310  —  SettingsMixin: VG settings saved
+00:42:20  INFO      tab_settings:310  —  SettingsMixin: VG settings saved
+00:42:56  INFO      logger:52  —  ============================================================
+00:42:56  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 00:42:56
+00:42:56  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+00:42:57  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+00:43:24  INFO      tab_settings:310  —  SettingsMixin: VG settings saved
+09:54:13  INFO      logger:52  —  ============================================================
+09:54:13  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 09:54:13
+09:54:13  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+09:54:18  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+09:54:29  INFO      tab_settings:344  —  SettingsMixin: VG settings saved
+09:54:32  INFO      tab_settings:344  —  SettingsMixin: VG settings saved
+10:05:36  INFO      logger:52  —  ============================================================
+10:05:36  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 10:05:36
+10:05:36  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+10:05:37  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+10:05:47  INFO      tab_settings:356  —  SettingsMixin: VG settings saved
+10:05:55  INFO      tab_settings:356  —  SettingsMixin: VG settings saved
+10:06:02  INFO      tab_settings:356  —  SettingsMixin: VG settings saved
+10:06:02  INFO      tab_settings:356  —  SettingsMixin: VG settings saved
+10:07:09  INFO      logger:52  —  ============================================================
+10:07:09  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 10:07:09
+10:07:09  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+10:07:11  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+10:07:18  INFO      tab_settings:356  —  SettingsMixin: VG settings saved
+10:07:21  INFO      tab_settings:356  —  SettingsMixin: VG settings saved
+10:12:31  INFO      logger:52  —  ============================================================
+10:12:31  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 10:12:31
+10:12:31  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+10:12:33  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+10:12:41  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+10:13:10  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+12:15:20  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+12:16:01  INFO      logger:52  —  ============================================================
+12:16:01  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 12:16:01
+12:16:01  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+12:16:06  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+12:16:16  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+12:16:20  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+12:16:21  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+12:43:29  INFO      logger:52  —  ============================================================
+12:43:29  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 12:43:29
+12:43:29  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+12:43:31  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+12:43:37  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+12:43:38  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+14:54:39  INFO      logger:52  —  ============================================================
+14:54:39  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 14:54:39
+14:54:39  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+14:54:40  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+14:54:46  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+14:54:53  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+14:54:55  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+14:55:21  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+14:55:23  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+14:55:24  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+15:00:17  INFO      logger:52  —  ============================================================
+15:00:17  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 15:00:17
+15:00:17  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+15:00:18  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+15:00:25  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+15:00:29  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+15:01:11  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+15:01:29  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+15:01:31  INFO      tab_settings:347  —  SettingsMixin: VG settings saved
+15:04:52  INFO      logger:52  —  ============================================================
+15:04:52  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 15:04:52
+15:04:52  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+15:04:54  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+15:05:02  INFO      tab_settings:427  —  SettingsMixin: VG settings saved
+15:05:08  INFO      tab_settings:427  —  SettingsMixin: VG settings saved
+15:08:11  INFO      logger:52  —  ============================================================
+15:08:11  INFO      logger:53  —  Ollama Manager Pro — session started 2026-06-27 15:08:11
+15:08:11  INFO      logger:55  —  Log file: G:\Projects\ollama_manager_pro\src\ollama_manager.log
+15:08:12  DEBUG     tab_prompts:445  —  PromptsMixin: refreshed  count=7
+15:08:20  INFO      tab_settings:438  —  SettingsMixin: VG settings saved
+15:08:21  INFO      tab_settings:438  —  SettingsMixin: VG settings saved
+15:08:48  INFO      tab_chat:766  —  ChatMixin: send  model=granite4.1:8b  history_len=1
+15:08:48  INFO      workers:229  —  ChatWorker.run: model=granite4.1:8b  messages=1
+15:08:52  INFO      tab_chat:603  —  ChatMixin: TTS started http://192.168.0.163:8050/tts (34 chars)
+15:08:52  INFO      tab_chat:827  —  ChatMixin: finished  eval=10  tps=68.9
+15:13:33  INFO      tab_chat:766  —  ChatMixin: send  model=qwen3.5:9b  history_len=3
+15:13:33  INFO      workers:229  —  ChatWorker.run: model=qwen3.5:9b  messages=3
+15:13:56  INFO      tab_chat:603  —  ChatMixin: TTS started http://192.168.0.163:8050/tts (2579 chars)
+15:13:56  INFO      tab_chat:827  —  ChatMixin: finished  eval=1173  tps=65.6

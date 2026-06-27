@@ -39,9 +39,12 @@ from chat_history_db import ChatHistoryDB, ChatSession
 
 # ── TTS worker ────────────────────────────────────────────────────────────
 
-class TTSWorker(QObject):
-    """Fire-and-forget POST to Voice Gateway in a background thread."""
-    done   = pyqtSignal()
+class TTSThread(QThread):
+    """
+    Subclasses QThread directly (more reliable than moveToThread on Windows).
+    POST text → VG returns WAV bytes → play blocking via winsound.
+    Runs in background so UI stays live during synthesis + playback.
+    """
     failed = pyqtSignal(str)
 
     def __init__(self, text: str, url: str, method: str = "POST", payload_key: str = "text"):
@@ -51,15 +54,52 @@ class TTSWorker(QObject):
         self.method      = method
         self.payload_key = payload_key
 
-    @pyqtSlot()
     def run(self):
+        import tempfile, os
+        import requests as _req
         try:
-            fn = getattr(_requests, self.method.lower())
-            r = fn(self.url, json={self.payload_key: self.text}, timeout=30)
-            r.raise_for_status()
-            self.done.emit()
+            fn = getattr(_req, self.method.lower())
+            r = fn(
+                self.url,
+                json={self.payload_key: self.text},
+                timeout=60,  # synthesis can take a few seconds for long replies
+            )
+            if r.status_code >= 400:
+                self.failed.emit(f"TTS HTTP {r.status_code} {r.reason}")
+                return
+
+            wav_bytes = r.content
+            if len(wav_bytes) < 44 or wav_bytes[:4] != b"RIFF":
+                self.failed.emit(
+                    f"TTS response not WAV ({len(wav_bytes)} bytes, "
+                    f"header={wav_bytes[:8]!r})")
+                return
+
+            # Write temp WAV and play blocking — winsound is built-in on Windows
+            try:
+                import winsound
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+                    f.write(wav_bytes)
+                    tmp_path = f.name
+                try:
+                    winsound.PlaySound(tmp_path, winsound.SND_FILENAME)
+                finally:
+                    try:
+                        os.unlink(tmp_path)
+                    except Exception:
+                        pass
+            except ImportError:
+                # Non-Windows fallback
+                try:
+                    import sounddevice as sd, soundfile as sf, io
+                    data, sr = sf.read(io.BytesIO(wav_bytes))
+                    sd.play(data, sr)
+                    sd.wait()
+                except ImportError:
+                    self.failed.emit("No audio backend: winsound (Windows) or sounddevice+soundfile required")
+
         except Exception as e:
-            self.failed.emit(str(e))
+            self.failed.emit(f"TTS error: {type(e).__name__}: {e}")
 
 
 # ── Bubble widget ─────────────────────────────────────────────────────────
@@ -537,33 +577,43 @@ class ChatMixin:
     # ── TTS ───────────────────────────────────────────────────────────────
 
     def _chat_speak(self, text: str):
-        """Send text to Voice Gateway TTS in a fire-and-forget thread."""
+        """Synthesise and play text via Voice Gateway in a background thread."""
         if not self.chat_tts_chk.isChecked():
             return
-        if not self._settings.get("vg_enabled"):
-            log.warning("ChatMixin: TTS checkbox on but VG disabled in Settings")
-            return
         if self._chat_tts_thread and self._chat_tts_thread.isRunning():
-            return  # previous TTS still going — skip rather than queue
+            return  # still playing — skip rather than queue
 
-        url     = self._settings.vg_full_url
-        method  = self._settings.get("vg_method") or "POST"
-        pk      = self._settings.get("vg_payload_key") or "text"
+        url = self._settings.vg_full_url
+        if not url or url.rstrip("/").endswith("50") is False and not url.strip():
+            self._set_status("TTS: No Voice Gateway URL configured in Settings")
+            return
 
-        worker = TTSWorker(text, url=url, method=method, payload_key=pk)
-        thread = QThread()
-        worker.moveToThread(thread)
-        thread.started.connect(worker.run)
-        worker.done.connect(thread.quit)
-        worker.done.connect(worker.deleteLater)
-        worker.failed.connect(lambda e: log.warning("TTS failed: %s", e))
-        worker.failed.connect(thread.quit)
-        worker.failed.connect(worker.deleteLater)
+        method = self._settings.get("vg_method") or "POST"
+        pk     = self._settings.get("vg_payload_key") or "text"
+
+        self._set_status(f"TTS synthesising...")
+        self.chat_tts_chk.setText("🔊 TTS ⏳")
+
+        thread = TTSThread(text, url=url, method=method, payload_key=pk)
+        thread.failed.connect(self._chat_tts_failed)
         thread.finished.connect(thread.deleteLater)
-        thread.finished.connect(lambda: setattr(self, "_chat_tts_thread", None))
+        thread.finished.connect(self._chat_tts_finished)
         self._chat_tts_thread = thread
         thread.start()
-        log.info("ChatMixin: TTS dispatched to %s (%d chars)", url, len(text))
+        log.info("ChatMixin: TTS started %s (%d chars)", url, len(text))
+
+    def _chat_tts_finished(self):
+        self._chat_tts_thread = None
+        self.chat_tts_chk.setText("🔊 TTS")
+        self._set_status("TTS playback complete.")
+
+    def _chat_tts_failed(self, err: str):
+        self._chat_tts_thread = None
+        self.chat_tts_chk.setText("🔊 TTS ✗")
+        self._set_status(f"TTS failed: {err}")
+        log.warning("ChatMixin: TTS failed: %s", err)
+        from PyQt6.QtCore import QTimer
+        QTimer.singleShot(5000, lambda: self.chat_tts_chk.setText("🔊 TTS"))
 
     # ── Export ────────────────────────────────────────────────────────────
 

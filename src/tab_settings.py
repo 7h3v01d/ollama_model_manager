@@ -25,9 +25,13 @@ from widgets import SectionLabel, Separator
 
 # ── Test worker ────────────────────────────────────────────────────────────
 
-class VGTestWorker(QObject):
-    log_line = pyqtSignal(str)   # status message
-    done     = pyqtSignal(bool)  # success
+class VGTestThread(QThread):
+    """
+    Subclass QThread directly — most reliable way to avoid slot-not-firing
+    issues when moveToThread + started.connect is finicky.
+    """
+    log_line = pyqtSignal(str)
+    done     = pyqtSignal(bool)
 
     def __init__(self, url: str, method: str, payload_key: str, text: str):
         super().__init__()
@@ -36,27 +40,144 @@ class VGTestWorker(QObject):
         self.payload_key = payload_key
         self.text        = text
 
-    @pyqtSlot()
     def run(self):
-        self.log_line.emit(f"→ {self.method} {self.url}")
-        payload = {self.payload_key: self.text}
-        self.log_line.emit(f"  payload: {json.dumps(payload)}")
+        import socket, json as _json
+        import requests as _req
+        from urllib.parse import urlparse
+
+        # ── TCP check ─────────────────────────────────────────────────
+        parsed = urlparse(self.url)
+        host = parsed.hostname or ""
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        self.log_line.emit(f"① TCP check {host}:{port} …")
         try:
-            fn = getattr(_requests, self.method.lower())
-            r = fn(self.url, json=payload, timeout=10)
-            self.log_line.emit(f"  status : {r.status_code} {r.reason}")
-            if r.text:
-                preview = r.text[:200]
-                self.log_line.emit(f"  body   : {preview}")
-            ok = r.status_code < 400
-            self.log_line.emit("✓ Success" if ok else "✗ Server returned error")
-            self.done.emit(ok)
+            s = socket.create_connection((host, port), timeout=5)
+            s.close()
+            self.log_line.emit("   ✓ reachable")
         except Exception as e:
-            self.log_line.emit(f"✗ {type(e).__name__}: {e}")
+            self.log_line.emit(f"   ✗ {e}")
+            self.log_line.emit("   → Check Base URL / VG is running")
             self.done.emit(False)
+            return
+
+        # ── HTTP request — form-data first, then JSON ──────────────────
+        payload = {self.payload_key: self.text}
+        fn = getattr(_req, self.method.lower())
+
+        for label, kwargs in [
+            ("application/json", {"json": payload}),
+            ("form-data",        {"data": payload}),
+        ]:
+            self.log_line.emit(f"\n② {self.method} {self.url}")
+            self.log_line.emit(f"   encoding : {label}")
+            self.log_line.emit(f"   payload  : {_json.dumps(payload)}")
+            try:
+                r = fn(self.url, timeout=60, **kwargs)
+                self.log_line.emit(f"   status   : {r.status_code} {r.reason}")
+                if r.status_code < 400:
+                    wav_bytes = r.content
+                    self.log_line.emit(f"   received : {len(wav_bytes):,} bytes")
+                    if wav_bytes[:4] == b"RIFF":
+                        self.log_line.emit("   Playing audio…")
+                        import tempfile, os
+                        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+                            f.write(wav_bytes)
+                            tmp = f.name
+                        try:
+                            import winsound
+                            winsound.PlaySound(tmp, winsound.SND_FILENAME)
+                            self.log_line.emit("✓ Playback complete")
+                        except Exception as pe:
+                            self.log_line.emit(f"   winsound error: {pe}")
+                        finally:
+                            try: os.unlink(tmp)
+                            except Exception: pass
+                    else:
+                        self.log_line.emit(f"   body     : {wav_bytes[:120]!r}")
+                    self.done.emit(True)
+                    return
+                else:
+                    self.log_line.emit(f"   body     : {r.content[:120]!r}")
+                    self.log_line.emit(f"   ✗ HTTP {r.status_code} — trying next…")
+            except _req.exceptions.Timeout:
+                self.log_line.emit(f"   ✗ Timed out with {label} — trying next…")
+            except Exception as e:
+                self.log_line.emit(f"   ✗ {type(e).__name__}: {e}")
+
+        self.log_line.emit("\n✗ All encodings failed — check endpoint path.")
+        self.done.emit(False)
 
 
-# ── Settings Mixin ─────────────────────────────────────────────────────────
+class PlayAudioThread(QThread):
+    """
+    Identical code path to TTSThread in tab_chat.py.
+    Downloads full WAV from VG and plays it via winsound.
+    Used by the Settings 'Play Audio Test' button.
+    """
+    log_line = pyqtSignal(str)
+
+    def __init__(self, url: str, method: str, payload_key: str, text: str):
+        super().__init__()
+        self.url         = url
+        self.method      = method
+        self.payload_key = payload_key
+        self.text        = text
+
+    def run(self):
+        import tempfile, os
+        import requests as _req
+
+        self.log_line.emit("   Sending request…")
+        try:
+            fn = getattr(_req, self.method.lower())
+            r = fn(
+                self.url,
+                json={self.payload_key: self.text},
+                timeout=60,
+            )
+            self.log_line.emit(f"   status  : {r.status_code} {r.reason}")
+            if r.status_code >= 400:
+                self.log_line.emit(f"   ✗ HTTP {r.status_code}")
+                return
+
+            wav_bytes = r.content
+            self.log_line.emit(f"   received: {len(wav_bytes):,} bytes")
+            if len(wav_bytes) < 44 or wav_bytes[:4] != b"RIFF":
+                self.log_line.emit(f"   ✗ Not a WAV file (header={wav_bytes[:8]!r})")
+                return
+
+            self.log_line.emit("   Writing temp WAV…")
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+                f.write(wav_bytes)
+                tmp_path = f.name
+            self.log_line.emit(f"   Playing  : {tmp_path}")
+
+            try:
+                import winsound
+                self.log_line.emit("   winsound.PlaySound() — blocking until done…")
+                winsound.PlaySound(tmp_path, winsound.SND_FILENAME)
+                self.log_line.emit("   ✓ Playback complete")
+            except ImportError:
+                self.log_line.emit("   winsound not available (non-Windows)")
+                try:
+                    import sounddevice as sd, soundfile as sf, io
+                    data, sr = sf.read(io.BytesIO(wav_bytes))
+                    sd.play(data, sr)
+                    sd.wait()
+                    self.log_line.emit("   ✓ Playback complete (sounddevice)")
+                except Exception as e:
+                    self.log_line.emit(f"   ✗ Playback failed: {e}")
+            except Exception as e:
+                self.log_line.emit(f"   ✗ winsound error: {type(e).__name__}: {e}")
+            finally:
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+
+        except Exception as e:
+            self.log_line.emit(f"   ✗ {type(e).__name__}: {e}")
+
 
 class SettingsMixin:
 
@@ -218,6 +339,14 @@ class SettingsMixin:
         self.vg_test_btn.setMinimumWidth(110)
         self.vg_test_btn.clicked.connect(self._settings_test_vg)
 
+        self.vg_play_btn = QPushButton("🔊  Play Audio Test")
+        self.vg_play_btn.setMinimumWidth(130)
+        self.vg_play_btn.setObjectName("btn_primary")
+        self.vg_play_btn.setToolTip(
+            "Download full WAV from VG and play it via winsound — "
+            "same code path as the Chat TTS. Use this to confirm audio works.")
+        self.vg_play_btn.clicked.connect(self._settings_play_audio_test)
+
         self.vg_clear_log_btn = QPushButton("Clear log")
         self.vg_clear_log_btn.setMinimumWidth(80)
         self.vg_clear_log_btn.setStyleSheet("font-size:11px;")
@@ -225,6 +354,7 @@ class SettingsMixin:
 
         btn_row.addWidget(self.vg_save_btn)
         btn_row.addWidget(self.vg_test_btn)
+        btn_row.addWidget(self.vg_play_btn)
         btn_row.addStretch(1)
         btn_row.addWidget(self.vg_clear_log_btn)
         vg_l.addLayout(btn_row)
@@ -302,11 +432,9 @@ class SettingsMixin:
             "vg_test_phrase": self.vg_test_phrase_input.text().strip(),
             "chat_tts_auto":  self.vg_auto_chk.isChecked(),
         })
-        # Sync the chat tab checkbox if it exists
         if hasattr(self, "chat_tts_chk"):
             self.chat_tts_chk.setChecked(self.vg_enabled_chk.isChecked())
         self._set_status("Voice Gateway settings saved.")
-        self.vg_log.append("✓ Settings saved.")
         log.info("SettingsMixin: VG settings saved")
 
     def _settings_test_vg(self):
@@ -314,7 +442,6 @@ class SettingsMixin:
             self.vg_log.append("⚠ Test already running…")
             return
 
-        # Auto-save first
         self._settings_save_vg()
 
         url    = self._settings.vg_full_url
@@ -325,18 +452,33 @@ class SettingsMixin:
         self.vg_log.append(f"\n── Test {method} ──────────────────────────")
         self.vg_test_btn.setEnabled(False)
 
-        worker = VGTestWorker(url, method, key, phrase)
-        thread = QThread()
-        worker.moveToThread(thread)
-        thread.started.connect(worker.run)
-        worker.log_line.connect(self.vg_log.append)
-        worker.done.connect(self._settings_test_done)
-        worker.done.connect(lambda _: thread.quit())
-        worker.done.connect(worker.deleteLater)
-        thread.finished.connect(thread.deleteLater)
+        thread = VGTestThread(url, method, key, phrase)
+        thread.log_line.connect(self.vg_log.append)
+        thread.done.connect(self._settings_test_done)
         thread.finished.connect(lambda: setattr(self, "_vg_test_thread", None))
+        thread.finished.connect(thread.deleteLater)
         self._vg_test_thread = thread
         thread.start()
+
+    def _settings_play_audio_test(self):
+        """Full end-to-end: download WAV + play via winsound. Same as Chat TTS."""
+        self._settings_save_vg()
+        url    = self._settings.vg_full_url
+        method = self.vg_method_combo.currentText()
+        key    = self.vg_payload_key_input.text().strip() or "text"
+        phrase = self.vg_test_phrase_input.text().strip()
+
+        self.vg_log.append(f"\n── Audio playback test ──────────────────────")
+        self.vg_log.append(f"   URL    : {url}")
+        self.vg_log.append(f"   phrase : {phrase!r}")
+        self.vg_play_btn.setEnabled(False)
+
+        self._play_thread = PlayAudioThread(url, method, key, phrase)
+        self._play_thread.log_line.connect(self.vg_log.append)
+        self._play_thread.finished.connect(
+            lambda: self.vg_play_btn.setEnabled(True))
+        self._play_thread.finished.connect(self._play_thread.deleteLater)
+        self._play_thread.start()
 
     def _settings_test_done(self, ok: bool):
         self.vg_test_btn.setEnabled(True)
