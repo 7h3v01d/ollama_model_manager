@@ -588,8 +588,8 @@ class ChatMixin:
         if self._chat_tts_thread and self._chat_tts_thread.isRunning():
             return  # still playing — skip rather than queue
 
-        url = self._settings.vg_full_url
-        if not url or url.rstrip("/").endswith("50") is False and not url.strip():
+        url = (self._settings.vg_full_url or "").strip()
+        if not url:
             self._set_status("TTS: No Voice Gateway URL configured in Settings")
             return
 
@@ -756,6 +756,11 @@ class ChatMixin:
             self._chat_session_id = self._chat_db.create_session(
                 model=model, system_prompt=system, title=title)
             self._chat_refresh_session_list()
+        else:
+            # Keep stored system prompt current if edited mid-session,
+            # so resuming this session doesn't restore a stale one.
+            self._chat_db.update_session_system_prompt(
+                self._chat_session_id, system)
 
         # Persist and display user message
         self._chat_db.add_message(self._chat_session_id, "user", user_text)

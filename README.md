@@ -204,4 +204,4 @@ src/
 
 ## Licence
 
-Apache 2.0 — Leon Priest (7h3v01d).
+Apache 2.0 — Built by Leon (7h3v01d).

@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QSizePolicy,
     QSplitter,
     QTextEdit,
     QVBoxLayout,
@@ -74,6 +75,8 @@ class ModelfileMixin:
 
         # Quick param controls
         params_group = QGroupBox("Quick Parameters")
+        params_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         pl = QHBoxLayout(params_group); pl.setSpacing(18)
         self._mf_param_widgets: dict = {}
         for name, lo, hi, default, decs in [
@@ -94,12 +97,15 @@ class ModelfileMixin:
             col.addWidget(lbl); col.addWidget(val_lbl)
             pl.addLayout(col)
             self._mf_param_widgets[name] = (val_lbl, lo, hi, default, decs)
-        pl.addStretch(1)
+        pl.addSpacing(24)
+        pl.addWidget(Separator(vertical=True))
+        pl.addSpacing(24)
         sync_btn = QPushButton("↓  Sync to Editor")
         sync_btn.setFixedHeight(28)
         sync_btn.setStyleSheet("font-size:11px;")
         sync_btn.clicked.connect(self._mf_sync_params)
-        pl.addWidget(sync_btn)
+        pl.addWidget(sync_btn, 0, Qt.AlignmentFlag.AlignVCenter)
+        pl.addStretch(1)
         layout.addWidget(params_group)
 
         # Editor / preview splitter
@@ -125,7 +131,10 @@ class ModelfileMixin:
 
         splitter.addWidget(ew); splitter.addWidget(pw)
         splitter.setSizes([700, 340])
-        layout.addWidget(splitter)
+        # Stretch factor 1: all spare vertical space goes to the editors,
+        # so the Quick Parameters group stays at its natural compact height
+        # instead of splitting the extra space and stretching its labels apart.
+        layout.addWidget(splitter, 1)
 
         self.mf_status_lbl = QLabel("")
         self.mf_status_lbl.setObjectName("label_muted")

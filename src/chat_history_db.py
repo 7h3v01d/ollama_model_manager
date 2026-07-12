@@ -133,6 +133,14 @@ class ChatHistoryDB:
         )
         self._con.commit()
 
+    def update_session_system_prompt(self, session_id: int, system_prompt: str):
+        now = datetime.now().isoformat(timespec="seconds")
+        self._con.execute(
+            "UPDATE sessions SET system_prompt=?, updated_at=? WHERE id=?",
+            (system_prompt, now, session_id),
+        )
+        self._con.commit()
+
     def touch_session(self, session_id: int):
         now = datetime.now().isoformat(timespec="seconds")
         self._con.execute(

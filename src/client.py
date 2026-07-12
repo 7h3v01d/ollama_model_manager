@@ -154,9 +154,12 @@ class OllamaClient:
         messages: list of {"role": "user"|"assistant"|"system", "content": str}
         Yields each response object from the NDJSON stream.
         """
+        # NOTE: unlike /api/generate, /api/chat has NO top-level "system"
+        # field — Ollama silently ignores it. The system prompt must be
+        # injected as the first message with role "system".
+        if system and not (messages and messages[0].get("role") == "system"):
+            messages = [{"role": "system", "content": system}] + list(messages)
         payload: dict = {"model": model, "messages": messages, "stream": True}
-        if system:
-            payload["system"] = system
         options: dict = {}
         if temperature is not None:
             options["temperature"] = temperature
@@ -167,7 +170,7 @@ class OllamaClient:
 
         with self.session.post(
             self._url("/api/chat"),
-            data=__import__("json").dumps(payload),
+            data=json.dumps(payload),
             timeout=120,
             stream=True,
         ) as r:
@@ -176,8 +179,8 @@ class OllamaClient:
                 if not line:
                     continue
                 try:
-                    yield __import__("json").loads(line)
-                except __import__("json").JSONDecodeError:
+                    yield json.loads(line)
+                except json.JSONDecodeError:
                     yield {"raw": line}
 
 
